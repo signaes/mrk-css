@@ -5,10 +5,12 @@ version = 4
 [[package]]
 name = "mrk"
 version = "0.9.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8bbd0459f3ed86ce80bb88f36979710ee48aac8788ece3e31a453baceba69f84"
 
 [[package]]
 name = "mrk-css"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "mrk",
 ]

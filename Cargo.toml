@@ -1,6 +1,6 @@
 [package]
 name = "mrk-css"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2024"
 description = "Type-safe CSS authoring: StyleSheet, rules, at-rules, selectors, typed values, the CSS Color 4 parser, a pretty-printer, and the css! macro"
 authors = ["Thiago Oliveira <thiago@signaes.com>"]
@@ -11,4 +11,4 @@ keywords = ["css", "markup", "builder", "stylesheet"]
 categories = ["template-engine"]
 
 [dependencies]
-mrk = { path = "../mrk", version = "0.9.0" }
+mrk = { version = "0.9.0" }
