@@ -55,7 +55,7 @@
 
 use std::borrow::Cow;
 
-use crate::css::at_rules::{AtRule, Keyframe, RuleOrAtRule};
+use crate::css::at_rules::{AtRule, Keyframe, PageMarginBox, RuleOrAtRule};
 use crate::css::declaration::Declaration;
 use crate::css::properties::{Value, parse_decl_value, split_important};
 use crate::css::rule::{NestedBlock, Rule};
@@ -408,10 +408,7 @@ fn parse_at_block(prelude: &str, body: &str) -> AtRule {
         "font-face" => AtRule::FontFace {
             declarations: parse_declarations_only(body, "@font-face"),
         },
-        "page" => AtRule::Page {
-            pseudo: optional_name(rest),
-            declarations: parse_declarations_only(body, "@page"),
-        },
+        "page" => parse_at_page(rest, body),
         other => panic!("css!: unsupported at-rule `@{other}`"),
     }
 }
@@ -542,6 +539,50 @@ fn parse_scope(rest: &str, body: &str) -> AtRule {
         limit,
         rules: parse_sheet_items(body),
     }
+}
+
+/// `@page [pseudo] { decls; … @top-left { … } … }`.
+///
+/// A `@page` body is allowed to contain declarations and page-margin
+/// boxes (`@top-left`, `@bottom-center`, `@left-middle`, …). Any
+/// other nested block is rejected with a clear message.
+fn parse_at_page(rest: &str, body: &str) -> AtRule {
+    let mut declarations = Vec::new();
+    let mut margin_boxes = Vec::new();
+    for chunk in chunk_body(body) {
+        match chunk {
+            Chunk::Statement(stmt) => declarations.push(parse_declaration(&stmt)),
+            Chunk::Block { prelude, body } => {
+                if is_page_margin_box(&prelude) {
+                    margin_boxes.push(PageMarginBox {
+                        area: Cow::Owned(prelude),
+                        declarations: parse_declarations_only(&body, "@page"),
+                    });
+                } else {
+                    panic!(
+                        "css!: @page bodies only take declarations and page-margin boxes (@top-*, @bottom-*, @left-*, @right-*), got `{prelude} {{ … }}`"
+                    );
+                }
+            }
+        }
+    }
+    AtRule::Page {
+        pseudo: optional_name(rest),
+        declarations,
+        margin_boxes,
+    }
+}
+
+/// `true` if `prelude` is a page-margin-box area name (CSS Paged
+/// Media Level 3, §3.4): `@top-*`, `@bottom-*`, `@left-*`, or
+/// `@right-*`. The check is by prefix; the spec defines 16 specific
+/// names but accepts implementations that recognize any name in the
+/// same shape.
+fn is_page_margin_box(prelude: &str) -> bool {
+    prelude.starts_with("@top-")
+        || prelude.starts_with("@bottom-")
+        || prelude.starts_with("@left-")
+        || prelude.starts_with("@right-")
 }
 
 /// `@keyframes name { stop { … } … }`.
@@ -1599,6 +1640,66 @@ mod tests {
     #[test]
     fn at_page_pseudo() {
         assert!(render("@page :first { margin-top: 2cm; }").contains("@page :first"));
+    }
+
+    #[test]
+    fn at_page_with_margin_boxes() {
+        let css = render(
+            "@page { @top-left { content: \"Header\"; } @bottom-center { content: counter(page); } }",
+        );
+        assert!(css.contains("@top-left"));
+        assert!(css.contains("content: \"Header\""));
+        assert!(css.contains("@bottom-center"));
+        assert!(css.contains("counter(page)"));
+    }
+
+    #[test]
+    fn at_page_with_margin_box_and_decls() {
+        let css = render(
+            "@page :first { margin: 1in; @top-left { content: \"H\"; } }",
+        );
+        assert!(css.contains("@page :first"));
+        assert!(css.contains("margin: 1in"));
+        assert!(css.contains("@top-left"));
+        assert!(css.contains("content: \"H\""));
+    }
+
+    #[test]
+    fn parse_at_rule_page_margin_boxes() {
+        let at = parse_at_rule(
+            "@page",
+            Some("@top-left { content: \"Header\"; } @bottom-center { content: \"X\"; }"),
+        );
+        let s = at.to_string();
+        assert!(s.contains("@page"));
+        assert!(s.contains("@top-left"));
+        assert!(s.contains("content: \"Header\""));
+        assert!(s.contains("@bottom-center"));
+        assert!(s.contains("content: \"X\""));
+    }
+
+    #[test]
+    #[should_panic(expected = "page-margin boxes")]
+    fn parse_at_page_rejects_non_margin_box_block() {
+        parse_at_rule("@page", Some("@media screen { color: red; }"));
+    }
+
+    #[test]
+    fn is_page_margin_box_predicate() {
+        // Spec-defined names
+        assert!(is_page_margin_box("@top-left"));
+        assert!(is_page_margin_box("@top-center"));
+        assert!(is_page_margin_box("@top-right-corner"));
+        assert!(is_page_margin_box("@bottom-left"));
+        assert!(is_page_margin_box("@left-middle"));
+        assert!(is_page_margin_box("@right-top"));
+        // Non-margin-boxes
+        assert!(!is_page_margin_box("@media"));
+        assert!(!is_page_margin_box("@font-face"));
+        assert!(!is_page_margin_box(".top-left"));
+        assert!(!is_page_margin_box("top-left"));
+        assert!(!is_page_margin_box("@top")); // missing dash
+        assert!(!is_page_margin_box("@middle")); // not a recognized prefix
     }
 
     #[test]

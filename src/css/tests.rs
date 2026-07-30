@@ -774,3 +774,63 @@ fn comments_inside_css_macro_are_stripped() {
     assert!(css_text.contains(".link"));
     assert!(css_text.contains("color: rgb(0, 0, 255);"));
 }
+
+#[test]
+fn css_macro_page_with_margin_boxes() {
+    // Regression: page-margin boxes inside `@page` used to panic the
+    // macro because the parser routed `@page` bodies through the
+    // declarations-only path.
+    let sheet = crate::css! {
+        @page {
+            @top-left { content: "Header"; }
+            @top-right { content: "Page"; }
+        }
+    };
+    let css = sheet.render();
+    assert!(css.contains("@page"));
+    assert!(css.contains("@top-left"));
+    assert!(css.contains("content: \"Header\""));
+    assert!(css.contains("@top-right"));
+    assert!(css.contains("content: \"Page\""));
+}
+
+#[test]
+fn css_macro_page_with_pseudo_and_margin_boxes() {
+    let sheet = crate::css! {
+        @page :first {
+            margin: 1in;
+            @top-left { content: "Title"; }
+            @bottom-center { content: "Page"; }
+        }
+    };
+    let css = sheet.render();
+    assert!(css.contains("@page :first"));
+    assert!(css.contains("margin: 1in"));
+    assert!(css.contains("@top-left"));
+    assert!(css.contains("content: \"Title\""));
+    assert!(css.contains("@bottom-center"));
+    assert!(css.contains("content: \"Page\""));
+}
+
+#[test]
+fn css_macro_page_with_left_and_right_margin_boxes() {
+    let sheet = crate::css! {
+        @page {
+            @left-top { content: "L"; }
+            @right-bottom { content: "R"; }
+        }
+    };
+    let css = sheet.render();
+    assert!(css.contains("@left-top"));
+    assert!(css.contains("@right-bottom"));
+}
+
+#[test]
+#[should_panic(expected = "page-margin boxes")]
+fn css_macro_page_rejects_non_margin_box_block() {
+    let _ = crate::css! {
+        @page {
+            @media screen { color: red; }
+        }
+    };
+}

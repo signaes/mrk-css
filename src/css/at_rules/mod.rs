@@ -74,6 +74,7 @@ pub enum AtRule {
     Page {
         pseudo: Option<Cow<'static, str>>,
         declarations: Vec<Declaration>,
+        margin_boxes: Vec<PageMarginBox>,
     },
     /// `@import url [supports] [media];`
     Import {
@@ -98,6 +99,23 @@ pub struct Keyframe {
     /// Keyframe selectors (e.g. `"from"`, `"to"`, `"50%"`).
     pub selectors: Vec<Cow<'static, str>>,
     /// Declarations at this keyframe stop.
+    pub declarations: Vec<Declaration>,
+}
+
+/// A page-margin box inside a `@page` rule (CSS Paged Media Level 3).
+///
+/// The 16 standard boxes are `@top-left-corner`, `@top-left`,
+/// `@top-center`, `@top-right`, `@top-right-corner`, the five
+/// `@bottom-*` analogs, and `@left-top/middle/bottom` and
+/// `@right-top/middle/bottom`. The struct stores the box name as
+/// written (including the leading `@`) so user-authored output is
+/// preserved verbatim.
+#[derive(Debug, Clone)]
+pub struct PageMarginBox {
+    /// The margin-box area name, including the leading `@` (e.g.
+    /// `"@top-left"`, `"@bottom-center"`).
+    pub area: Cow<'static, str>,
+    /// Declarations inside this margin box.
     pub declarations: Vec<Declaration>,
 }
 
@@ -190,7 +208,7 @@ impl fmt::Display for AtRule {
             AtRule::Layer { name, rules } => layer::render(f, name.as_deref(), rules),
             AtRule::Keyframes { name, keyframes } => keyframes::render(f, name, keyframes),
             AtRule::FontFace { declarations } => font_face::render(f, declarations),
-            AtRule::Page { pseudo, declarations } => page::render(f, pseudo.as_deref(), declarations),
+            AtRule::Page { pseudo, declarations, margin_boxes } => page::render(f, pseudo.as_deref(), declarations, margin_boxes),
             AtRule::Import { url, supports, media } => import::render(f, url, supports.as_deref(), media.as_deref()),
             AtRule::Charset { encoding } => charset::render(f, encoding),
             AtRule::Namespace { prefix, url } => namespace::render(f, prefix.as_deref(), url),
@@ -612,6 +630,7 @@ mod tests {
         let at = AtRule::Page {
             pseudo: Some(Cow::Borrowed(":first")),
             declarations: vec![],
+            margin_boxes: vec![],
         };
         assert_eq!(at.to_string(), "@page :first {}");
     }
@@ -624,6 +643,7 @@ mod tests {
                 "margin",
                 crate::css::properties::Value::Number(1.0.into()),
             )],
+            margin_boxes: vec![],
         };
         let s = at.to_string();
         assert!(s.contains("margin"));
@@ -734,6 +754,7 @@ mod tests {
                 "margin",
                 crate::css::properties::Value::Number(1.0.into()),
             )],
+            margin_boxes: vec![],
         };
         assert!(at.to_string().contains("margin"));
     }
@@ -788,6 +809,7 @@ mod tests {
             at_rule: AtRule::Page {
                 pseudo: None,
                 declarations: vec![],
+                margin_boxes: vec![],
             },
         }
             .decl(Declaration::new("margin", crate::css::properties::Value::Number(1.0.into())))
