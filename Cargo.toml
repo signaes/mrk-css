@@ -1,6 +1,6 @@
 [package]
 name = "mrk-css"
-version = "0.1.1"
+version = "0.1.2"
 edition = "2024"
 description = "Type-safe CSS authoring: StyleSheet, rules, at-rules, selectors, typed values, the CSS Color 4 parser, a pretty-printer, and the css! macro"
 authors = ["Thiago Oliveira <thiago@signaes.com>"]

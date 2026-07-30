@@ -10,7 +10,7 @@ checksum = "8bbd0459f3ed86ce80bb88f36979710ee48aac8788ece3e31a453baceba69f84"
 
 [[package]]
 name = "mrk-css"
-version = "0.1.1"
+version = "0.1.2"
 dependencies = [
  "mrk",
 ]
