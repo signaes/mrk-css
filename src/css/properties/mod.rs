@@ -196,6 +196,14 @@ pub(crate) fn parse_value(s: &str) -> Value {
         return Value::Raw(Cow::Borrowed(""));
     }
 
+    // Quoted string: kept intact by `tokenize_values` even with
+    // interior whitespace (e.g. font-family: "EB Garamond").
+    if s.len() >= 2
+        && ((s.starts_with('"') && s.ends_with('"')) || (s.starts_with('\'') && s.ends_with('\'')))
+    {
+        return Value::String(CssString::new(s[1..s.len() - 1].to_string()));
+    }
+
     // Function call: name(args) — try before hex/literal so "rgb(255,0,0)"
     // is recognized as a color fn, not as raw "rgb ( 255 , 0 , 0 )".
     if let Some((name, args_str)) = split_function_call(s) {
@@ -240,15 +248,20 @@ pub(crate) fn parse_value(s: &str) -> Value {
 /// survives, otherwise returns the single value (or
 /// `Value::Raw("")` for an empty input).
 pub(crate) fn parse_value_list(s: &str) -> Value {
-    let parts: Vec<&str> = s.split_whitespace().collect();
+    let parts = tokenize_values(s);
     if parts.is_empty() {
         return Value::Raw(Cow::Borrowed(""));
     }
     if parts.len() == 1 {
-        return parse_value(parts[0]);
+        return parse_value(parts[0].trim_end_matches(','));
     }
     let mut values: Vec<Value> = Vec::new();
     for part in parts {
+        // List separators stay glued to their token (`"EB Garamond",`).
+        let part = part.trim_end_matches(',');
+        if part.is_empty() {
+            continue;
+        }
         let (head, glued) = split_glued_dot(part);
         values.push(parse_value(head));
         if let Some(tail) = glued {
@@ -256,6 +269,46 @@ pub(crate) fn parse_value_list(s: &str) -> Value {
         }
     }
     Value::List(values)
+}
+
+/// Split a value list into whitespace-separated tokens, keeping quoted
+/// strings (quotes included) as single tokens even when they contain
+/// whitespace: `font-family: "EB Garamond", serif` must not split
+/// `"EB Garamond"` apart.
+fn tokenize_values(s: &str) -> Vec<String> {
+    let mut tokens = Vec::new();
+    let mut cur = String::new();
+    let mut quote: Option<char> = None;
+    let mut chars = s.chars().peekable();
+    while let Some(c) = chars.next() {
+        if let Some(q) = quote {
+            cur.push(c);
+            if c == '\\' {
+                if let Some(escaped) = chars.next() {
+                    cur.push(escaped);
+                }
+            } else if c == q {
+                quote = None;
+            }
+            continue;
+        }
+        if c == '"' || c == '\'' {
+            quote = Some(c);
+            cur.push(c);
+            continue;
+        }
+        if c.is_whitespace() {
+            if !cur.is_empty() {
+                tokens.push(std::mem::take(&mut cur));
+            }
+            continue;
+        }
+        cur.push(c);
+    }
+    if !cur.is_empty() {
+        tokens.push(cur);
+    }
+    tokens
 }
 
 /// Split a token like `all.3s` back into `all` and `.3s`.
@@ -1268,5 +1321,31 @@ mod tests {
         for (input, want) in [("solid", true), ("8px", false)] {
             assert_eq!(matches!(parse_decl_value(input), Value::Identifier(_)), want);
         }
+    }
+}
+
+#[cfg(test)]
+mod quoted_string_tests {
+    use super::*;
+    use crate::css::parse::parse_stylesheet;
+
+    #[test]
+    fn quoted_string_with_spaces_is_one_value() {
+        let v = parse_value_list(r#""EB Garamond", Georgia, serif"#);
+        let Value::List(items) = v else { panic!("expected list, got {v:?}") };
+        assert!(matches!(&items[0], Value::String(s) if s.as_str() == "EB Garamond"));
+    }
+
+    #[test]
+    fn single_quoted_string_becomes_string_value() {
+        let v = parse_value(r#""hello world""#);
+        assert!(matches!(v, Value::String(s) if s.as_str() == "hello world"));
+    }
+
+    #[test]
+    fn stylesheet_font_family_roundtrip() {
+        let sheet = parse_stylesheet(r#"body { font-family: "EB Garamond", serif; }"#);
+        let rendered = mrk::Renderable::render(&sheet);
+        assert!(rendered.contains("EB Garamond"), "{rendered}");
     }
 }

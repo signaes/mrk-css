@@ -74,11 +74,51 @@ use crate::css::StyleSheet;
 /// a message pointing at the offending fragment.
 #[doc(hidden)]
 pub fn parse_stylesheet(input: &str) -> StyleSheet {
-    let preprocessed = preprocess(input);
+    let preprocessed = preprocess(&strip_comments(input));
     StyleSheet::from_items(parse_sheet_items(&preprocessed))
 }
 
 // ── Preprocessing ───────────────────────────────────────────────────
+
+/// Remove `/* … */` comments, honoring string literals (a `/*` inside
+/// a quoted string is kept). Unterminated comments are dropped to EOF.
+fn strip_comments(input: &str) -> String {
+    let mut out = String::with_capacity(input.len());
+    let mut quote: Option<char> = None;
+    let mut chars = input.chars().peekable();
+    while let Some(c) = chars.next() {
+        if let Some(q) = quote {
+            out.push(c);
+            if c == '\\' {
+                if let Some(escaped) = chars.next() {
+                    out.push(escaped);
+                }
+            } else if c == q {
+                quote = None;
+            }
+            continue;
+        }
+        if c == '"' || c == '\'' {
+            quote = Some(c);
+            out.push(c);
+            continue;
+        }
+        if c == '/' && chars.peek() == Some(&'*') {
+            chars.next(); // consume '*'
+            let mut prev = '\0';
+            for c in chars.by_ref() {
+                if prev == '*' && c == '/' {
+                    break;
+                }
+                prev = c;
+            }
+            out.push(' ');
+            continue;
+        }
+        out.push(c);
+    }
+    out
+}
 
 /// Re-join token pairs that `stringify!` may still split when the
 /// source was written with interior spacing.
@@ -1076,6 +1116,14 @@ mod tests {
     #[test]
     fn preprocess_joins_dot() {
         assert_eq!(preprocess(". btn . text"), ".btn .text");
+    }
+
+    #[test]
+    fn stylesheet_strips_comments() {
+        let sheet = parse_stylesheet("/* header */ p { color: red; /* inline */ } /* trailer */");
+        assert_eq!(sheet.items().len(), 1);
+        let sheet = parse_stylesheet("p { content: \"/* not a comment */\"; }");
+        assert_eq!(sheet.items().len(), 1);
     }
 
     #[test]

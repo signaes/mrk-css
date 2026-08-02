@@ -7,7 +7,7 @@
 mod numeric;
 
 mod length;
-pub use length::Length;
+pub use length::{Length, LengthUnit};
 
 mod percentage;
 pub use percentage::Percentage;

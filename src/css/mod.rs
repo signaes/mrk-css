@@ -89,7 +89,7 @@
 use crate::css::at_rules::RuleOrAtRule;
 use mrk::Renderable;
 
-pub(crate) mod values;
+pub mod values;
 
 /// A collection of CSS rules and at-rules.
 ///
@@ -123,6 +123,15 @@ impl StyleSheet {
     /// macro.
     pub(crate) fn from_items(items: Vec<crate::css::at_rules::RuleOrAtRule>) -> StyleSheet {
         StyleSheet { items }
+    }
+
+    /// The rules and at-rules of this stylesheet, in source order.
+    ///
+    /// Enables downstream consumers (e.g. `mrk-pdf`'s layout engine) to
+    /// perform selector matching and cascade resolution over a parsed
+    /// stylesheet.
+    pub fn items(&self) -> &[crate::css::at_rules::RuleOrAtRule] {
+        &self.items
     }
 }
 

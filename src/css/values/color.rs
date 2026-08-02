@@ -969,32 +969,123 @@ pub enum ColorKind {
     /// `red`, `rebeccapurple`, etc.
     Named(Ident),
     /// `rgb(r, g, b)` / `rgba(r, g, b, a)`.
-    Rgb { r: u8, g: u8, b: u8, alpha: Option<f32> },
+    Rgb {
+        /// Red channel (0–255).
+        r: u8,
+        /// Green channel (0–255).
+        g: u8,
+        /// Blue channel (0–255).
+        b: u8,
+        /// Alpha (0.0–1.0), if specified.
+        alpha: Option<f32>,
+    },
     /// `hsl(h, s, l)` / `hsla(h, s, l, a)`.
-    Hsl { h: f32, s: Percentage, l: Percentage, alpha: Option<f32> },
+    Hsl {
+        /// Hue in degrees (0–360).
+        h: f32,
+        /// Saturation.
+        s: Percentage,
+        /// Lightness.
+        l: Percentage,
+        /// Alpha (0.0–1.0), if specified.
+        alpha: Option<f32>,
+    },
     /// `hwb(h, w, b)` / `hwb(h w b / a)`.
-    Hwb { h: f32, w: Percentage, b: Percentage, alpha: Option<f32> },
+    Hwb {
+        /// Hue in degrees (0–360).
+        h: f32,
+        /// Whiteness.
+        w: Percentage,
+        /// Blackness.
+        b: Percentage,
+        /// Alpha (0.0–1.0), if specified.
+        alpha: Option<f32>,
+    },
     /// `lab(l a b)` / `lab(l a b / a)`.
-    Lab { l: Percentage, a: f32, b: f32, alpha: Option<f32> },
+    Lab {
+        /// Lightness (0–100%).
+        l: Percentage,
+        /// Green–red axis (−125–125 in practice).
+        a: f32,
+        /// Blue–yellow axis (−125–125 in practice).
+        b: f32,
+        /// Alpha (0.0–1.0), if specified.
+        alpha: Option<f32>,
+    },
     /// `lch(l c h)` / `lch(l c h / a)`.
-    Lch { l: Percentage, c: f32, h: Angle, alpha: Option<f32> },
+    Lch {
+        /// Lightness (0–100%).
+        l: Percentage,
+        /// Chroma (≥ 0).
+        c: f32,
+        /// Hue angle.
+        h: Angle,
+        /// Alpha (0.0–1.0), if specified.
+        alpha: Option<f32>,
+    },
     /// `oklab(l a b)` / `oklab(l a b / a)`.
-    Oklab { l: Percentage, a: f32, b: f32, alpha: Option<f32> },
+    Oklab {
+        /// Perceptual lightness (0–100%).
+        l: Percentage,
+        /// Green–red axis.
+        a: f32,
+        /// Blue–yellow axis.
+        b: f32,
+        /// Alpha (0.0–1.0), if specified.
+        alpha: Option<f32>,
+    },
     /// `oklch(l c h)` / `oklch(l c h / a)`.
-    Oklch { l: Percentage, c: f32, h: Angle, alpha: Option<f32> },
+    Oklch {
+        /// Perceptual lightness (0–100%).
+        l: Percentage,
+        /// Chroma (≥ 0).
+        c: f32,
+        /// Hue angle.
+        h: Angle,
+        /// Alpha (0.0–1.0), if specified.
+        alpha: Option<f32>,
+    },
     /// `color(<space> <ch1> <ch2> [<ch3>] [/ a])`.
-    Color { space: Ident, channels: Vec<f32>, alpha: Option<f32> },
+    Color {
+        /// Color space identifier (`srgb`, `display-p3`, `a98-rgb`, …).
+        space: Ident,
+        /// Channel values in the given space.
+        channels: Vec<f32>,
+        /// Alpha (0.0–1.0), if specified.
+        alpha: Option<f32>,
+    },
     /// `color-mix(in <space>, <a>, <b> <pct>)`.
     ColorMix(Box<ColorMix>),
     /// `color-contrast(<colors> vs <target>?)` — rare; included for
     /// completeness.
-    ColorContrast { colors: Vec<Color>, target: Option<Box<Color>> },
+    ColorContrast {
+        /// Candidate colors to pick from.
+        colors: Vec<Color>,
+        /// Optional color to contrast against.
+        target: Option<Box<Color>>,
+    },
     /// `device-cmyk(c m y k [/ a])`.
-    DeviceCmyk { c: Percentage, m: Percentage, y: Percentage, k: Percentage, alpha: Option<f32> },
+    DeviceCmyk {
+        /// Cyan component.
+        c: Percentage,
+        /// Magenta component.
+        m: Percentage,
+        /// Yellow component.
+        y: Percentage,
+        /// Black (key) component.
+        k: Percentage,
+        /// Alpha (0.0–1.0), if specified.
+        alpha: Option<f32>,
+    },
     /// System color (`Canvas`, `CanvasText`, `ButtonFace`, etc.).
     System(Ident),
     /// `light-dark(<light>, <dark>)`.
-    LightDark { light: Box<Color>, dark: Box<Color> },
+    LightDark {
+        /// Color used in light mode.
+        light: Box<Color>,
+        /// Color used in dark mode.
+        dark: Box<Color>,
+    },
     /// `currentcolor` keyword.
     CurrentColor,
     /// `transparent` keyword.
@@ -3932,7 +4023,7 @@ mod tests {
             let c = Color::rgb(r, g, b);
             let hsl = c.into_hsl().unwrap();
             let (h, s, l, _alpha) = as_hsl(&hsl.into_kind()).expect("expected Hsl");
-            assert!(h < 1.0 || h > 359.0);
+            assert!(!(1.0..=359.0).contains(&h));
             assert!((s.value() - 100.0).abs() < 1.0);
             assert!((l.value() - 50.0).abs() < 1.0);
         }

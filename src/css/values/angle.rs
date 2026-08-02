@@ -136,7 +136,7 @@ mod tests {
 
     #[test]
     fn display_rad() {
-        assert_eq!(Angle::rad(1.5708).to_string(), "1.5708rad");
+        assert_eq!(Angle::rad(1.1234).to_string(), "1.1234rad");
     }
 
     #[test]

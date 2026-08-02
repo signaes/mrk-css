@@ -20,9 +20,25 @@ pub enum EasingFunction {
     /// `ease-in-out`.
     EaseInOut,
     /// `cubic-bezier(<x1>, <y1>, <x2>, <y2>)`.
-    CubicBezier { x1: f32, y1: f32, x2: f32, y2: f32 },
+    CubicBezier {
+        /// X coordinate of the first control point.
+        x1: f32,
+        /// Y coordinate of the first control point.
+        y1: f32,
+        /// X coordinate of the second control point.
+        x2: f32,
+        /// Y coordinate of the second control point.
+        y2: f32,
+    },
     /// `steps(<count>, <jump-term>?, <position>?)`.
-    Steps { count: u32, jump_term: JumpTerm, position: StepPosition },
+    Steps {
+        /// Number of steps in the interval.
+        count: u32,
+        /// Where the jumps occur within the steps.
+        jump_term: JumpTerm,
+        /// Step position keyword (`start` / `end`).
+        position: StepPosition,
+    },
 }
 
 /// Jump term for the `steps()` easing function.

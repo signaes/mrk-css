@@ -2,6 +2,11 @@
 //!
 //! Full implementation lands with Phase 1.9.
 
+/// A CSS identifier: a keyword or custom-ident such as `auto`, `solid`,
+/// or a user-defined name.
+///
+/// The text is stored internally; read it back via [`Display`](std::fmt::Display)
+/// (`ident.to_string()`).
 pub struct Ident(pub(crate) std::borrow::Cow<'static, str>);
 
 impl Ident {
