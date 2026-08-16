@@ -13,22 +13,29 @@
 //!
 //! ## Quick start
 //!
-//! ```ignore
+//! ```
 //! use mrk_css::css::*;
+//! use mrk_css::css::values::{Color, Length};
+//! use mrk_css::Renderable;
 //!
 //! let sheet = StyleSheet::new()
-//!     .rule(|s| s.selector(".btn").block(|r| {
+//!     .rule(|s| s.selector(Selector::class("btn")).block(|r| {
 //!         r.color(Color::named("rebeccapurple"))
-//!          .padding(Length::px(8), Length::px(16))
-//!          .background_color(Color::WHITE)
+//!          .padding(Value::List(vec![Length::px(8.0).into(), Length::px(16.0).into()]))
+//!          .background_color(Color::named("white"))
 //!     }))
-//!     .media("(min-width: 800px)", |m| {
-//!         m.rule(|s| s.selector(".btn").block(|r| {
-//!             r.font_size(Length::px(18))
-//!         }))
-//!     });
+//!     .at_rule(
+//!         AtRule::media("(min-width: 800px)")
+//!             .rule(|s| s.selector(Selector::class("btn")).block(|r| {
+//!                 r.font_size(Length::px(18.0))
+//!             }))
+//!             .build(),
+//!     )
+//!     .build();
 //!
 //! let css = sheet.render();
+//! assert!(css.contains(".btn"));
+//! assert!(css.contains("@media (min-width: 800px)"));
 //! ```
 //!
 //! The [`css!`](crate::css!) macro compiles CSS-like syntax into the
@@ -137,7 +144,10 @@ impl StyleSheet {
 
 impl StyleSheetBuilder {
     /// Add a CSS rule via a builder closure.
-    pub fn rule(mut self, f: impl FnOnce(crate::css::rule::RuleBuilder) -> crate::css::rule::RuleBuilder) -> Self {
+    pub fn rule(
+        mut self,
+        f: impl FnOnce(crate::css::rule::RuleBuilder) -> crate::css::rule::RuleBuilder,
+    ) -> Self {
         let rule = f(crate::css::rule::RuleBuilder::new()).build();
         self.items.push(RuleOrAtRule::Rule(rule));
         self

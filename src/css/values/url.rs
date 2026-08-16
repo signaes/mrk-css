@@ -24,17 +24,26 @@ pub struct Url {
 impl Url {
     /// Construct a local URL (relative path).
     pub fn local(s: impl Into<Cow<'static, str>>) -> Self {
-        Url { raw: s.into(), kind: UrlKind::Local }
+        Url {
+            raw: s.into(),
+            kind: UrlKind::Local,
+        }
     }
 
     /// Construct an absolute URL.
     pub fn absolute(s: impl Into<Cow<'static, str>>) -> Self {
-        Url { raw: s.into(), kind: UrlKind::Absolute }
+        Url {
+            raw: s.into(),
+            kind: UrlKind::Absolute,
+        }
     }
 
     /// Construct a `data:` URL.
     pub fn data(s: impl Into<Cow<'static, str>>) -> Self {
-        Url { raw: s.into(), kind: UrlKind::Data }
+        Url {
+            raw: s.into(),
+            kind: UrlKind::Data,
+        }
     }
 
     /// Return the raw URL string.
@@ -50,7 +59,10 @@ impl Url {
 
 impl fmt::Display for Url {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "url(\"{}\")", self.raw)
+        // Escape characters that would break the double-quoted URL
+        // syntax: backslash first, then double quotes.
+        let escaped = self.raw.replace('\\', "\\\\").replace('"', "\\\"");
+        write!(f, "url(\"{}\")", escaped)
     }
 }
 
@@ -108,10 +120,15 @@ mod tests {
 
     #[test]
     fn display_with_quotes_escaped() {
-        // Note: URL display doesn't escape internal quotes by default.
-        // This documents current behavior.
-        let u = Url::local("a\"b");
-        assert_eq!(u.to_string(), "url(\"a\"b\")");
+        let cases: [(&str, &str); 4] = [
+            ("a\"b", "url(\"a\\\"b\")"),
+            ("a\\b", "url(\"a\\\\b\")"),
+            ("a\\\"b", "url(\"a\\\\\\\"b\")"),
+            ("plain.png", "url(\"plain.png\")"),
+        ];
+        for (input, expected) in cases {
+            assert_eq!(Url::local(input).to_string(), expected);
+        }
     }
 
     #[test]

@@ -26,7 +26,12 @@ impl Color {
     /// construct through this function.
     pub fn rgb(r: u8, g: u8, b: u8) -> Self {
         Color {
-            kind: ColorKind::Rgb { r, g, b, alpha: None },
+            kind: ColorKind::Rgb {
+                r,
+                g,
+                b,
+                alpha: None,
+            },
         }
     }
 
@@ -83,7 +88,11 @@ impl Color {
             }
             _ => None,
         }?;
-        let alpha = if bytes.3 == 255 { None } else { Some(bytes.3 as f32 / 255.0) };
+        let alpha = if bytes.3 == 255 {
+            None
+        } else {
+            Some(bytes.3 as f32 / 255.0)
+        };
         Some(Color {
             kind: ColorKind::Rgb {
                 r: bytes.0,
@@ -128,12 +137,16 @@ impl Color {
 
     /// `currentColor` keyword.
     pub fn current_color() -> Self {
-        Color { kind: ColorKind::CurrentColor }
+        Color {
+            kind: ColorKind::CurrentColor,
+        }
     }
 
     /// `transparent` keyword.
     pub fn transparent() -> Self {
-        Color { kind: ColorKind::Transparent }
+        Color {
+            kind: ColorKind::Transparent,
+        }
     }
 
     /// Construct an HSL color.
@@ -233,7 +246,12 @@ impl Color {
     }
 
     /// Construct a CMYK color.
-    pub fn cmyk(c: impl Into<Percentage>, m: impl Into<Percentage>, y: impl Into<Percentage>, k: impl Into<Percentage>) -> Self {
+    pub fn cmyk(
+        c: impl Into<Percentage>,
+        m: impl Into<Percentage>,
+        y: impl Into<Percentage>,
+        k: impl Into<Percentage>,
+    ) -> Self {
         Color {
             kind: ColorKind::DeviceCmyk {
                 c: c.into(),
@@ -256,7 +274,13 @@ impl Color {
     }
 
     /// `color-mix(in <space>, <a>, <b> <pct>)`.
-    pub fn mix(a: Color, b: Color, percentage: Percentage, space: ColorMixSpace, method: ColorMixMethod) -> Self {
+    pub fn mix(
+        a: Color,
+        b: Color,
+        percentage: Percentage,
+        space: ColorMixSpace,
+        method: ColorMixMethod,
+    ) -> Self {
         Color {
             kind: ColorKind::ColorMix(Box::new(ColorMix {
                 a,
@@ -289,7 +313,12 @@ impl Color {
         let g = (srgb.g * 255.0).round().clamp(0.0, 255.0) as u8;
         let b = (srgb.b * 255.0).round().clamp(0.0, 255.0) as u8;
         Ok(Color {
-            kind: ColorKind::Rgb { r, g, b, alpha: srgb.alpha },
+            kind: ColorKind::Rgb {
+                r,
+                g,
+                b,
+                alpha: srgb.alpha,
+            },
         })
     }
 
@@ -365,14 +394,41 @@ impl Color {
             }),
             ColorKind::Hsl { h, s, l, alpha } => {
                 let (r, g, b) = hsl_to_srgb(*h, s.value(), l.value());
-                Ok(SrgbFloat { r, g, b, alpha: *alpha })
+                Ok(SrgbFloat {
+                    r,
+                    g,
+                    b,
+                    alpha: *alpha,
+                })
             }
             ColorKind::Hwb { h, w, b, alpha } => {
                 let (r, g, b2) = hwb_to_srgb(*h, w.value(), b.value());
-                Ok(SrgbFloat { r, g, b: b2, alpha: *alpha })
+                Ok(SrgbFloat {
+                    r,
+                    g,
+                    b: b2,
+                    alpha: *alpha,
+                })
             }
-            ColorKind::Lab { .. } => Err(ConversionError::Unresolvable),
-            ColorKind::Lch { .. } => Err(ConversionError::Unresolvable),
+            ColorKind::Lab { l, a, b, alpha } => {
+                let (r, g, b2) = lab_to_srgb(l.value(), *a, *b);
+                Ok(SrgbFloat {
+                    r,
+                    g,
+                    b: b2,
+                    alpha: *alpha,
+                })
+            }
+            ColorKind::Lch { l, c, h, alpha } => {
+                let (l_val, a, b_) = lch_to_lab(l.value(), *c, h.to_degrees());
+                let (r, g, b2) = lab_to_srgb(l_val, a, b_);
+                Ok(SrgbFloat {
+                    r,
+                    g,
+                    b: b2,
+                    alpha: *alpha,
+                })
+            }
             ColorKind::Oklab { l, a, b, alpha } => {
                 let (r, g, b2) = oklab_to_srgb(l.value(), *a, *b);
                 Ok(SrgbFloat {
@@ -396,7 +452,11 @@ impl Color {
                     alpha: *alpha,
                 })
             }
-            ColorKind::Color { space, channels, alpha } => {
+            ColorKind::Color {
+                space,
+                channels,
+                alpha,
+            } => {
                 let space_lower = space.to_string().to_lowercase();
                 // If the space is a known sRGB-variant, use channels directly
                 if space_lower == "srgb" || space_lower == "srgb-linear" {
@@ -414,7 +474,12 @@ impl Color {
                     let g = channels.get(1).copied().unwrap_or(0.0);
                     let b = channels.get(2).copied().unwrap_or(0.0);
                     let (r, g, b) = gamut_map_srgb(r, g, b, 8);
-                    Ok(SrgbFloat { r, g, b, alpha: *alpha })
+                    Ok(SrgbFloat {
+                        r,
+                        g,
+                        b,
+                        alpha: *alpha,
+                    })
                 } else {
                     Err(ConversionError::Unresolvable)
                 }
@@ -432,19 +497,25 @@ impl Color {
                 let r = (1.0 - c) * (1.0 - k);
                 let g = (1.0 - m) * (1.0 - k);
                 let b = (1.0 - y) * (1.0 - k);
-                Ok(SrgbFloat { r, g, b, alpha: *alpha })
+                Ok(SrgbFloat {
+                    r,
+                    g,
+                    b,
+                    alpha: *alpha,
+                })
             }
-            ColorKind::System(_) | ColorKind::LightDark { .. } | ColorKind::CurrentColor | ColorKind::Transparent => {
-                Err(ConversionError::Unresolvable)
-            }
-            ColorKind::Named(name) => {
-                named_to_srgb(&name.to_string()).ok_or(ConversionError::Unresolvable).map(|(r, g, b)| SrgbFloat {
+            ColorKind::System(_)
+            | ColorKind::LightDark { .. }
+            | ColorKind::CurrentColor
+            | ColorKind::Transparent => Err(ConversionError::Unresolvable),
+            ColorKind::Named(name) => named_to_srgb(&name.to_string())
+                .ok_or(ConversionError::Unresolvable)
+                .map(|(r, g, b)| SrgbFloat {
                     r: r as f32 / 255.0,
                     g: g as f32 / 255.0,
                     b: b as f32 / 255.0,
                     alpha: None,
-                })
-            }
+                }),
         }
     }
 }
@@ -493,7 +564,11 @@ fn hsl_to_srgb(h: f32, s_pct: f32, l_pct: f32) -> (f32, f32, f32) {
         let k = (n + h_norm * 12.0) % 12.0;
         l - a * (k - 3.0).min(9.0 - k).clamp(-1.0, 1.0)
     };
-    (f(0.0).clamp(0.0, 1.0), f(8.0).clamp(0.0, 1.0), f(4.0).clamp(0.0, 1.0))
+    (
+        f(0.0).clamp(0.0, 1.0),
+        f(8.0).clamp(0.0, 1.0),
+        f(4.0).clamp(0.0, 1.0),
+    )
 }
 
 fn srgb_to_hsl(r: f32, g: f32, b: f32) -> (f32, f32, f32) {
@@ -506,7 +581,11 @@ fn srgb_to_hsl(r: f32, g: f32, b: f32) -> (f32, f32, f32) {
     }
 
     let d = max - min;
-    let s = if l > 0.5 { d / (2.0 - max - min) } else { d / (max + min) };
+    let s = if l > 0.5 {
+        d / (2.0 - max - min)
+    } else {
+        d / (max + min)
+    };
 
     let h = if max == r {
         (g - b) / d + if g < b { 6.0 } else { 0.0 }
@@ -531,6 +610,124 @@ fn hwb_to_srgb(h: f32, w_pct: f32, b_pct: f32) -> (f32, f32, f32) {
     let (r, g, b2) = hsl_to_srgb(h, 100.0, 50.0);
     let scale = 1.0 - w - b;
     (r * scale + w, g * scale + w, b2 * scale + w)
+}
+
+// ── CIE Lab / LCH (D50) ───────────────────────────────────────────
+
+// Reference values from CSS Color Module Level 4.
+#[allow(clippy::excessive_precision)]
+fn srgb_to_lab(r: f32, g: f32, b: f32) -> (f32, f32, f32) {
+    let rl = srgb_to_linear(r);
+    let gl = srgb_to_linear(g);
+    let bl = srgb_to_linear(b);
+
+    // Linear sRGB (D65) -> XYZ (D65).
+    let x = 0.4123907993 * rl + 0.3575843394 * gl + 0.1804807884 * bl;
+    let y = 0.2126390059 * rl + 0.7151686788 * gl + 0.0721923154 * bl;
+    let z = 0.0193308187 * rl + 0.1191947798 * gl + 0.9505321523 * bl;
+
+    // Bradford chromatic adaptation: D65 -> D50.
+    let x_d50 = 1.0478112 * x + 0.0228866 * y - 0.0501270 * z;
+    let y_d50 = 0.0295424 * x + 0.9904844 * y - 0.0170491 * z;
+    let z_d50 = -0.0092345 * x + 0.0150436 * y + 0.7521317 * z;
+
+    // XYZ (D50) -> CIE Lab (white point in the same 0-1 scale as the
+    // linear-sRGB/XYZ matrices above).
+    const XN: f32 = 0.964212;
+    const YN: f32 = 1.0;
+    const ZN: f32 = 0.825188;
+    const EPSILON: f32 = 216.0 / 24389.0;
+    const KAPPA: f32 = 24389.0 / 27.0;
+
+    let f = |t: f32| {
+        if t > EPSILON {
+            t.cbrt()
+        } else {
+            (KAPPA * t + 16.0) / 116.0
+        }
+    };
+
+    let fx = f(x_d50 / XN);
+    let fy = f(y_d50 / YN);
+    let fz = f(z_d50 / ZN);
+
+    let l = 116.0 * fy - 16.0;
+    let a = 500.0 * (fx - fy);
+    let b_ = 200.0 * (fy - fz);
+    (l, a, b_)
+}
+
+#[allow(clippy::excessive_precision)]
+fn lab_to_linear_srgb(l: f32, a: f32, b_: f32) -> (f32, f32, f32) {
+    // CIE Lab -> XYZ (D50) (white point in 0-1 XYZ scale).
+    const XN: f32 = 0.964212;
+    const YN: f32 = 1.0;
+    const ZN: f32 = 0.825188;
+    const EPSILON: f32 = 216.0 / 24389.0;
+    const KAPPA: f32 = 24389.0 / 27.0;
+
+    let fy = (l + 16.0) / 116.0;
+    let fx = fy + a / 500.0;
+    let fz = fy - b_ / 200.0;
+
+    let f_inv = |t: f32| {
+        let t3 = t * t * t;
+        if t3 > EPSILON {
+            t3
+        } else {
+            (116.0 * t - 16.0) / KAPPA
+        }
+    };
+
+    let xr = f_inv(fx);
+    let yr = if l > KAPPA * EPSILON {
+        fy * fy * fy
+    } else {
+        l / KAPPA
+    };
+    let zr = f_inv(fz);
+
+    let x_d50 = xr * XN;
+    let y_d50 = yr * YN;
+    let z_d50 = zr * ZN;
+
+    // Bradford chromatic adaptation: D50 -> D65.
+    let x = 0.9554735 * x_d50 - 0.0230985 * y_d50 + 0.0632592 * z_d50;
+    let y = -0.0283697 * x_d50 + 1.0099954 * y_d50 + 0.0210419 * z_d50;
+    let z = 0.0123141 * x_d50 - 0.0205076 * y_d50 + 1.3301219 * z_d50;
+
+    // XYZ (D65) -> linear sRGB.
+    let r = 3.2409699419 * x - 1.5373831776 * y - 0.4986107603 * z;
+    let g = -0.9692436363 * x + 1.8759675015 * y + 0.0415550574 * z;
+    let b = 0.0556300797 * x - 0.2039769589 * y + 1.0569715142 * z;
+    (r, g, b)
+}
+
+fn lab_to_srgb(l: f32, a: f32, b_: f32) -> (f32, f32, f32) {
+    let (r, g, b) = lab_to_linear_srgb(l, a, b_);
+    (
+        srgb_inv_gamma(r).clamp(0.0, 1.0),
+        srgb_inv_gamma(g).clamp(0.0, 1.0),
+        srgb_inv_gamma(b).clamp(0.0, 1.0),
+    )
+}
+
+fn lab_to_lch(l: f32, a: f32, b_: f32) -> (f32, f32, f32) {
+    let c = (a * a + b_ * b_).sqrt();
+    let h = if c.abs() < 1e-10 {
+        0.0
+    } else {
+        b_.atan2(a).to_degrees()
+    };
+    let h = if h < 0.0 { h + 360.0 } else { h };
+    (l, c, h)
+}
+
+fn lch_to_lab(l: f32, c: f32, h: f32) -> (f32, f32, f32) {
+    let h_rad = h.to_radians();
+    let a = c * h_rad.cos();
+    let b_ = c * h_rad.sin();
+    (l, a, b_)
 }
 
 // ── OKLab / OKLCH ─────────────────────────────────────────────────
@@ -571,7 +768,11 @@ fn oklab_to_linear_srgb(l: f32, a: f32, b: f32) -> (f32, f32, f32) {
 
 fn oklab_to_srgb(l: f32, a: f32, b: f32) -> (f32, f32, f32) {
     let (rl, gl, bl) = oklab_to_linear_srgb(l, a, b);
-    (srgb_inv_gamma(rl).clamp(0.0, 1.0), srgb_inv_gamma(gl).clamp(0.0, 1.0), srgb_inv_gamma(bl).clamp(0.0, 1.0))
+    (
+        srgb_inv_gamma(rl).clamp(0.0, 1.0),
+        srgb_inv_gamma(gl).clamp(0.0, 1.0),
+        srgb_inv_gamma(bl).clamp(0.0, 1.0),
+    )
 }
 
 fn oklab_to_oklch(l: f32, a: f32, b: f32) -> (f32, f32, f32) {
@@ -637,8 +838,12 @@ fn resolve_color_contrast(
     for c in colors.iter() {
         let srgb = c.to_srgb_float()?;
         let ratio = contrast_ratio(
-            target_srgb.r, target_srgb.g, target_srgb.b,
-            srgb.r, srgb.g, srgb.b,
+            target_srgb.r,
+            target_srgb.g,
+            target_srgb.b,
+            srgb.r,
+            srgb.g,
+            srgb.b,
         );
         if best.as_ref().is_none_or(|&(_, r)| ratio > r) {
             best = Some((srgb, ratio));
@@ -684,7 +889,11 @@ fn interpolate_hue(h1: f32, h2: f32, p: f32, method: ColorMixMethod) -> f32 {
 
 /// Helper to produce alpha Option from raw alpha value.
 fn alpha_opt(alpha: f32) -> Option<f32> {
-    if (alpha - 1.0).abs() < f32::EPSILON { None } else { Some(alpha) }
+    if (alpha - 1.0).abs() < f32::EPSILON {
+        None
+    } else {
+        Some(alpha)
+    }
 }
 
 fn resolve_color_mix(m: &ColorMix) -> Result<SrgbFloat, ConversionError> {
@@ -701,7 +910,12 @@ fn resolve_color_mix(m: &ColorMix) -> Result<SrgbFloat, ConversionError> {
             let g = a_srgb.g * (1.0 - p) + b_srgb.g * p;
             let b = a_srgb.b * (1.0 - p) + b_srgb.b * p;
             let alpha = alpha_a * (1.0 - p) + alpha_b * p;
-            Ok(SrgbFloat { r, g, b, alpha: alpha_opt(alpha) })
+            Ok(SrgbFloat {
+                r,
+                g,
+                b,
+                alpha: alpha_opt(alpha),
+            })
         }
         ColorMixSpace::Hsl => {
             let (h1, s1, l1) = srgb_to_hsl(a_srgb.r, a_srgb.g, a_srgb.b);
@@ -711,15 +925,45 @@ fn resolve_color_mix(m: &ColorMix) -> Result<SrgbFloat, ConversionError> {
             let l = l1 * (1.0 - p) + l2 * p;
             let (r, g, b) = hsl_to_srgb(h, s, l);
             let alpha = alpha_a * (1.0 - p) + alpha_b * p;
-            Ok(SrgbFloat { r, g, b, alpha: alpha_opt(alpha) })
+            Ok(SrgbFloat {
+                r,
+                g,
+                b,
+                alpha: alpha_opt(alpha),
+            })
         }
-        ColorMixSpace::Lab | ColorMixSpace::Lch => {
-            // Fallback: interpolate directly in sRGB
-            let r = a_srgb.r * (1.0 - p) + b_srgb.r * p;
-            let g = a_srgb.g * (1.0 - p) + b_srgb.g * p;
-            let b = a_srgb.b * (1.0 - p) + b_srgb.b * p;
+        ColorMixSpace::Lab => {
+            let (l1, a1, b1) = srgb_to_lab(a_srgb.r, a_srgb.g, a_srgb.b);
+            let (l2, a2, b2) = srgb_to_lab(b_srgb.r, b_srgb.g, b_srgb.b);
+            let l = l1 * (1.0 - p) + l2 * p;
+            let a = a1 * (1.0 - p) + a2 * p;
+            let b = b1 * (1.0 - p) + b2 * p;
+            let (r, g, b) = lab_to_srgb(l, a, b);
             let alpha = alpha_a * (1.0 - p) + alpha_b * p;
-            Ok(SrgbFloat { r, g, b, alpha: alpha_opt(alpha) })
+            Ok(SrgbFloat {
+                r,
+                g,
+                b,
+                alpha: alpha_opt(alpha),
+            })
+        }
+        ColorMixSpace::Lch => {
+            let (l1, a1, b1) = srgb_to_lab(a_srgb.r, a_srgb.g, a_srgb.b);
+            let (l2, a2, b2) = srgb_to_lab(b_srgb.r, b_srgb.g, b_srgb.b);
+            let (l1, c1, h1) = lab_to_lch(l1, a1, b1);
+            let (l2, c2, h2) = lab_to_lch(l2, a2, b2);
+            let l = l1 * (1.0 - p) + l2 * p;
+            let c = c1 * (1.0 - p) + c2 * p;
+            let h = interpolate_hue(h1, h2, p, m.method);
+            let (_, a, b) = lch_to_lab(l, c, h);
+            let (r, g, b) = lab_to_srgb(l, a, b);
+            let alpha = alpha_a * (1.0 - p) + alpha_b * p;
+            Ok(SrgbFloat {
+                r,
+                g,
+                b,
+                alpha: alpha_opt(alpha),
+            })
         }
         ColorMixSpace::Oklab => {
             let (l1, a1, b1) = srgb_to_oklab(a_srgb.r, a_srgb.g, a_srgb.b);
@@ -729,7 +973,12 @@ fn resolve_color_mix(m: &ColorMix) -> Result<SrgbFloat, ConversionError> {
             let b = b1 * (1.0 - p) + b2 * p;
             let (r, g, b) = oklab_to_srgb(l, a, b);
             let alpha = alpha_a * (1.0 - p) + alpha_b * p;
-            Ok(SrgbFloat { r, g, b, alpha: alpha_opt(alpha) })
+            Ok(SrgbFloat {
+                r,
+                g,
+                b,
+                alpha: alpha_opt(alpha),
+            })
         }
         ColorMixSpace::Oklch => {
             let (l1, a1, b1) = srgb_to_oklab(a_srgb.r, a_srgb.g, a_srgb.b);
@@ -742,7 +991,12 @@ fn resolve_color_mix(m: &ColorMix) -> Result<SrgbFloat, ConversionError> {
             let (_, a_val, b_val) = oklch_to_oklab(l, c, h);
             let (r, g, b) = oklab_to_srgb(l, a_val, b_val);
             let alpha = alpha_a * (1.0 - p) + alpha_b * p;
-            Ok(SrgbFloat { r, g, b, alpha: alpha_opt(alpha) })
+            Ok(SrgbFloat {
+                r,
+                g,
+                b,
+                alpha: alpha_opt(alpha),
+            })
         }
     }
 }
@@ -763,7 +1017,7 @@ fn gamut_map_srgb(r: f32, g: f32, b: f32, max_iters: u32) -> (f32, f32, f32) {
     let (ok_l, ok_a, ok_b) = srgb_to_oklab(r.clamp(0.0, 1.0), g.clamp(0.0, 1.0), b.clamp(0.0, 1.0));
     let (_, c, h) = oklab_to_oklch(ok_l, ok_a, ok_b);
     let mut lo = 0.0_f32;
-    let hi = c;
+    let mut hi = c;
 
     for _ in 0..max_iters {
         let mid = (lo + hi) / 2.0;
@@ -772,22 +1026,16 @@ fn gamut_map_srgb(r: f32, g: f32, b: f32, max_iters: u32) -> (f32, f32, f32) {
         // Use the unclamped linear-sRGB output so the in-gamut check
         // can correctly detect when the chroma midpoint is out of gamut.
         let (r2, g2, b2) = oklab_to_linear_srgb(ok_l, a, b);
-        // `in_gamut` covers both branches; the `else { hi = mid }` arm
-        // is only reached when the chroma midpoint produces linear-sRGB
-        // values outside [-1e-6, 1.0+1e-6], which happens for very
-        // saturated inputs. For inputs where the OKLab is derived from
-        // already-in-gamut sRGB (after the clamp above), `lo` is updated
-        // every iteration and `hi` converges naturally.
         let in_gamut = (-1e-6..=1.0 + 1e-6).contains(&r2)
             && (-1e-6..=1.0 + 1e-6).contains(&g2)
             && (-1e-6..=1.0 + 1e-6).contains(&b2);
         if in_gamut {
             lo = mid;
+        } else {
+            // Midpoint is out of gamut: reduce chroma and continue
+            // the binary search toward the gamut boundary.
+            hi = mid;
         }
-        // Note: when `!in_gamut`, `hi = mid` would be set, but this
-        // branch is unreachable for inputs that survive the early
-        // in-gamut check above (because OKLab derived from clamped
-        // sRGB reduces chroma monotonically into gamut).
     }
 
     let a = lo * h.to_radians().cos();
@@ -961,6 +1209,33 @@ fn named_to_srgb_inner(name: &str) -> Option<(u8, u8, u8)> {
         "yellowgreen" => Some((154, 205, 50)),
         _ => None,
     }
+}
+
+/// CSS Color 4 system color names (case-insensitive).
+const SYSTEM_COLORS: &[&str] = &[
+    "canvas",
+    "canvastext",
+    "linktext",
+    "visitedtext",
+    "activetext",
+    "buttonface",
+    "buttontext",
+    "buttonborder",
+    "field",
+    "fieldtext",
+    "highlight",
+    "highlighttext",
+    "selecteditem",
+    "selecteditemtext",
+    "mark",
+    "marktext",
+    "graytext",
+];
+
+/// Returns `true` if `name` is a CSS system color keyword.
+fn is_system_color_name(name: &str) -> bool {
+    let lower = name.to_lowercase();
+    SYSTEM_COLORS.contains(&lower.as_str())
 }
 
 /// The CSS Color 4 representation variants.
@@ -1211,9 +1486,9 @@ impl fmt::Display for ConversionError {
             ConversionError::OutOfGamut { source, target } => {
                 write!(f, "color {} is out of the {} gamut", source, target)
             }
-            ConversionError::Unresolvable => {
-                f.write_str("color requires runtime context to resolve (light-dark() or system color)")
-            }
+            ConversionError::Unresolvable => f.write_str(
+                "color requires runtime context to resolve (light-dark() or system color)",
+            ),
         }
     }
 }
@@ -1347,14 +1622,56 @@ impl<'a> Cursor<'a> {
         }
     }
 
-    fn parse_pct_or_number(&mut self) -> Result<f32, ColorParseError> {
+    fn parse_none_pct_or_number(&mut self) -> Result<Option<(f32, bool)>, ColorParseError> {
+        self.skip_ws();
+        if self.peek() == Some(b'n')
+            && self.pos + 4 <= self.input.len()
+            && self.input[self.pos..self.pos + 4].eq_ignore_ascii_case("none")
+        {
+            self.pos += 4;
+            Ok(None)
+        } else {
+            self.parse_pct_or_number().map(Some)
+        }
+    }
+
+    fn parse_none_percentage(&mut self) -> Result<Option<Percentage>, ColorParseError> {
+        self.skip_ws();
+        if self.peek() == Some(b'n')
+            && self.pos + 4 <= self.input.len()
+            && self.input[self.pos..self.pos + 4].eq_ignore_ascii_case("none")
+        {
+            self.pos += 4;
+            Ok(None)
+        } else {
+            self.parse_percentage().map(Some)
+        }
+    }
+
+    fn parse_none_hue(&mut self) -> Result<Option<f32>, ColorParseError> {
+        self.skip_ws();
+        if self.peek() == Some(b'n')
+            && self.pos + 4 <= self.input.len()
+            && self.input[self.pos..self.pos + 4].eq_ignore_ascii_case("none")
+        {
+            self.pos += 4;
+            Ok(None)
+        } else {
+            self.parse_hue().map(Some)
+        }
+    }
+
+    /// Parse a number that may be followed by `%`. Returns the raw
+    /// numeric value and a flag indicating whether a percent sign was
+    /// present.
+    fn parse_pct_or_number(&mut self) -> Result<(f32, bool), ColorParseError> {
         let val = self.parse_number()?;
         self.skip_ws();
         if self.peek() == Some(b'%') {
             self.next();
-            Ok(val)
+            Ok((val, true))
         } else {
-            Ok(val)
+            Ok((val, false))
         }
     }
 
@@ -1388,6 +1705,12 @@ impl<'a> Cursor<'a> {
             self.pos += 1;
         }
         let unit = &self.input[start..self.pos];
+        // If the following keyword is `none`, it belongs to the next
+        // component, not to the hue unit.
+        if unit.eq_ignore_ascii_case("none") {
+            self.pos = start;
+            return Ok(val);
+        }
         match unit.to_lowercase().as_str() {
             "" | "deg" => Ok(val),
             "rad" => Ok(val.to_degrees()),
@@ -1428,8 +1751,7 @@ impl<'a> Cursor<'a> {
         if b == b'#' {
             self.next();
             let start = self.pos;
-            while self.pos < self.input.len()
-                && self.input.as_bytes()[self.pos].is_ascii_hexdigit()
+            while self.pos < self.input.len() && self.input.as_bytes()[self.pos].is_ascii_hexdigit()
             {
                 self.pos += 1;
             }
@@ -1473,16 +1795,34 @@ impl<'a> Cursor<'a> {
                 self.next();
                 parse_color_function_body(lower, args)
             } else {
+                self.skip_ws();
+                let alpha = if self.peek() == Some(b'/') {
+                    Some(self.parse_alpha()?.clamp(0.0, 1.0))
+                } else {
+                    None
+                };
                 match lower.as_str() {
                     "currentcolor" => Ok(Color::current_color()),
-                    "transparent" => Ok(Color::transparent()),
-                    s => {
-                        if named_to_srgb(s).is_some() {
-                            Ok(Color::named(Ident::from(String::from(s))))
+                    "transparent" => {
+                        if let Some(a) = alpha {
+                            Ok(Color::rgba(0, 0, 0, a))
                         } else {
+                            Ok(Color::transparent())
+                        }
+                    }
+                    s => {
+                        if let Some((r, g, b)) = named_to_srgb(s) {
+                            if let Some(a) = alpha {
+                                Ok(Color::rgba(r, g, b, a))
+                            } else {
+                                Ok(Color::named(Ident::from(String::from(s))))
+                            }
+                        } else if is_system_color_name(s) {
                             Ok(Color {
                                 kind: ColorKind::System(Ident::from(name.to_string())),
                             })
+                        } else {
+                            Err(ColorParseError::Invalid)
                         }
                     }
                 }
@@ -1536,58 +1876,73 @@ fn parse_color_function_body(name: String, args: &str) -> Result<Color, ColorPar
 #[inline(never)]
 fn parse_rgb(args: &str) -> Result<Color, ColorParseError> {
     let mut c = Cursor::new(args.trim());
-    let r_raw = c.parse_pct_or_number()?;
+    let (r_raw, r_is_pct) = c.parse_none_pct_or_number()?.unwrap_or((0.0, false));
     c.try_skip_comma();
-    let g_raw = c.parse_pct_or_number()?;
+    let (g_raw, g_is_pct) = c.parse_none_pct_or_number()?.unwrap_or((0.0, false));
     c.try_skip_comma();
-    let b_raw = c.parse_pct_or_number()?;
-    let is_pct = args.contains('%');
-    let to_byte = |v: f32| -> u8 {
+    let (b_raw, b_is_pct) = c.parse_none_pct_or_number()?.unwrap_or((0.0, false));
+    let to_byte = |v: f32, is_pct: bool| -> u8 {
         if is_pct {
             (v / 100.0 * 255.0).round().clamp(0.0, 255.0) as u8
         } else {
             v.round().clamp(0.0, 255.0) as u8
         }
     };
-    let r = to_byte(r_raw);
-    let g = to_byte(g_raw);
-    let b2 = to_byte(b_raw);
+    let r = to_byte(r_raw, r_is_pct);
+    let g = to_byte(g_raw, g_is_pct);
+    let b2 = to_byte(b_raw, b_is_pct);
     let mut alpha = None;
     if c.try_skip_comma() || c.peek() == Some(b'/') {
-        alpha = Some(c.parse_alpha()?);
+        if c.peek() == Some(b'/') {
+            c.next();
+            c.skip_ws();
+        }
+        alpha = Some(c.parse_none_number()?.unwrap_or(1.0));
     } else if !c.is_done() {
-        alpha = Some(c.parse_number()?);
+        alpha = Some(c.parse_none_number()?.unwrap_or(1.0));
     }
     let alpha = alpha.map(|a| a.clamp(0.0, 1.0));
-    let alpha = if alpha == Some(1.0) || alpha.is_none() { None } else { alpha };
+    let alpha = if alpha == Some(1.0) || alpha.is_none() {
+        None
+    } else {
+        alpha
+    };
     Ok(Color {
-        kind: ColorKind::Rgb {
-            r,
-            g,
-            b: b2,
-            alpha,
-        },
+        kind: ColorKind::Rgb { r, g, b: b2, alpha },
     })
 }
 
 #[inline(never)]
 fn parse_hsl(args: &str) -> Result<Color, ColorParseError> {
     let mut c = Cursor::new(args.trim());
-    let h = c.parse_hue()?;
+    let h = c.parse_none_hue()?.unwrap_or(0.0);
     c.try_skip_comma();
-    let s_val = c.parse_percentage()?;
+    let s_val = c.parse_none_percentage()?.unwrap_or(Percentage::new(0.0));
     c.try_skip_comma();
-    let l_val = c.parse_percentage()?;
+    let l_val = c.parse_none_percentage()?.unwrap_or(Percentage::new(0.0));
     let mut alpha = None;
     if c.try_skip_comma() || c.peek() == Some(b'/') {
-        alpha = Some(c.parse_alpha()?);
+        if c.peek() == Some(b'/') {
+            c.next();
+            c.skip_ws();
+        }
+        alpha = Some(c.parse_none_number()?.unwrap_or(1.0));
     } else if !c.is_done() {
-        alpha = Some(c.parse_number()?);
+        alpha = Some(c.parse_none_number()?.unwrap_or(1.0));
     }
     let alpha = alpha.map(|a| a.clamp(0.0, 1.0));
-    let alpha = if alpha == Some(1.0) || alpha.is_none() { None } else { alpha };
+    let alpha = if alpha == Some(1.0) || alpha.is_none() {
+        None
+    } else {
+        alpha
+    };
     Ok(Color {
-        kind: ColorKind::Hsl { h, s: s_val, l: l_val, alpha },
+        kind: ColorKind::Hsl {
+            h,
+            s: s_val,
+            l: l_val,
+            alpha,
+        },
     })
 }
 
@@ -1611,14 +1966,13 @@ fn parse_hwb(args: &str) -> Result<Color, ColorParseError> {
         alpha = Some(c.parse_number()?);
     }
     let alpha = alpha.map(|a| a.clamp(0.0, 1.0));
-    let alpha = if alpha == Some(1.0) || alpha.is_none() { None } else { alpha };
+    let alpha = if alpha == Some(1.0) || alpha.is_none() {
+        None
+    } else {
+        alpha
+    };
     Ok(Color {
-        kind: ColorKind::Hwb {
-            h,
-            w,
-            b: b2,
-            alpha,
-        },
+        kind: ColorKind::Hwb { h, w, b: b2, alpha },
     })
 }
 
@@ -1635,7 +1989,11 @@ fn parse_lab(args: &str) -> Result<Color, ColorParseError> {
         alpha = Some(c.parse_alpha()?);
     }
     let alpha = alpha.map(|a| a.clamp(0.0, 1.0));
-    let alpha = if alpha == Some(1.0) || alpha.is_none() { None } else { alpha };
+    let alpha = if alpha == Some(1.0) || alpha.is_none() {
+        None
+    } else {
+        alpha
+    };
     Ok(Color {
         kind: ColorKind::Lab {
             l: l_pct,
@@ -1659,7 +2017,11 @@ fn parse_lch(args: &str) -> Result<Color, ColorParseError> {
         alpha = Some(c.parse_alpha()?);
     }
     let alpha = alpha.map(|a| a.clamp(0.0, 1.0));
-    let alpha = if alpha == Some(1.0) || alpha.is_none() { None } else { alpha };
+    let alpha = if alpha == Some(1.0) || alpha.is_none() {
+        None
+    } else {
+        alpha
+    };
     Ok(Color {
         kind: ColorKind::Lch {
             l,
@@ -1673,8 +2035,8 @@ fn parse_lch(args: &str) -> Result<Color, ColorParseError> {
 #[inline(never)]
 fn parse_oklab(args: &str) -> Result<Color, ColorParseError> {
     let mut c = Cursor::new(args.trim());
-    let l_raw = c.parse_pct_or_number()?;
-    let l_pct = if args.contains('%') { Percentage::new(l_raw) } else { Percentage::new(l_raw * 100.0) };
+    let (l_raw, l_is_pct) = c.parse_pct_or_number()?;
+    let l_pct = Percentage::new(if l_is_pct { l_raw } else { l_raw * 100.0 });
     c.try_skip_comma();
     let a = c.parse_number()?;
     c.try_skip_comma();
@@ -1684,7 +2046,11 @@ fn parse_oklab(args: &str) -> Result<Color, ColorParseError> {
         alpha = Some(c.parse_alpha()?);
     }
     let alpha = alpha.map(|a| a.clamp(0.0, 1.0));
-    let alpha = if alpha == Some(1.0) || alpha.is_none() { None } else { alpha };
+    let alpha = if alpha == Some(1.0) || alpha.is_none() {
+        None
+    } else {
+        alpha
+    };
     Ok(Color {
         kind: ColorKind::Oklab {
             l: l_pct,
@@ -1698,8 +2064,8 @@ fn parse_oklab(args: &str) -> Result<Color, ColorParseError> {
 #[inline(never)]
 fn parse_oklch(args: &str) -> Result<Color, ColorParseError> {
     let mut c = Cursor::new(args.trim());
-    let l_raw = c.parse_pct_or_number()?;
-    let l_pct = if args.contains('%') { Percentage::new(l_raw) } else { Percentage::new(l_raw * 100.0) };
+    let (l_raw, l_is_pct) = c.parse_pct_or_number()?;
+    let l_pct = Percentage::new(if l_is_pct { l_raw } else { l_raw * 100.0 });
     c.try_skip_comma();
     let chroma = c.parse_number()?;
     c.try_skip_comma();
@@ -1709,7 +2075,11 @@ fn parse_oklch(args: &str) -> Result<Color, ColorParseError> {
         alpha = Some(c.parse_alpha()?);
     }
     let alpha = alpha.map(|a| a.clamp(0.0, 1.0));
-    let alpha = if alpha == Some(1.0) || alpha.is_none() { None } else { alpha };
+    let alpha = if alpha == Some(1.0) || alpha.is_none() {
+        None
+    } else {
+        alpha
+    };
     Ok(Color {
         kind: ColorKind::Oklch {
             l: l_pct,
@@ -1743,7 +2113,11 @@ fn parse_color_function(args: &str) -> Result<Color, ColorParseError> {
         alpha = Some(c.parse_alpha()?);
     }
     let alpha = alpha.map(|a| a.clamp(0.0, 1.0));
-    let alpha = if alpha == Some(1.0) || alpha.is_none() { None } else { alpha };
+    let alpha = if alpha == Some(1.0) || alpha.is_none() {
+        None
+    } else {
+        alpha
+    };
     Ok(Color {
         kind: ColorKind::Color {
             space: Ident::from(space.to_string()),
@@ -1803,13 +2177,25 @@ fn parse_color_mix(args: &str) -> Result<Color, ColorParseError> {
     };
     c.try_skip_comma();
     let color_a = c.parse_color_value()?;
+    c.skip_ws();
+    let pct_a = if c.peek() == Some(b',') || c.peek() == Some(b')') || c.is_done() {
+        None
+    } else {
+        Some(c.parse_percentage()?.value())
+    };
     c.try_skip_comma();
     let color_b = c.parse_color_value()?;
     c.skip_ws();
-    let pct = if !c.is_done() {
-        c.parse_percentage()?
+    let pct_b = if c.peek() == Some(b')') || c.is_done() {
+        None
     } else {
-        Percentage::new(50.0)
+        Some(c.parse_percentage()?.value())
+    };
+    let pct = match (pct_a, pct_b) {
+        (Some(_), Some(b)) => Percentage::new(b),
+        (Some(a), None) => Percentage::new((100.0 - a).clamp(0.0, 100.0)),
+        (None, Some(b)) => Percentage::new(b),
+        (None, None) => Percentage::new(50.0),
     };
     Ok(Color::mix(color_a, color_b, pct, space, hue_method))
 }
@@ -1849,22 +2235,28 @@ fn parse_color_contrast(args: &str) -> Result<Color, ColorParseError> {
 
 fn parse_device_cmyk(args: &str) -> Result<Color, ColorParseError> {
     let mut c = Cursor::new(args.trim());
-    let c_raw = c.parse_pct_or_number()?;
-    let c_has_pct = args.contains('%');
-    let to_pct = |v: f32| Percentage::new(if c_has_pct { v } else { v * 100.0 });
-    let cmyk_c = to_pct(c_raw);
+    let (c_raw, c_is_pct) = c.parse_pct_or_number()?;
+    let to_pct = |v: f32, is_pct: bool| Percentage::new(if is_pct { v } else { v * 100.0 });
+    let cmyk_c = to_pct(c_raw, c_is_pct);
     c.try_skip_comma();
-    let m = to_pct(c.parse_pct_or_number()?);
+    let (m_raw, m_is_pct) = c.parse_pct_or_number()?;
+    let m = to_pct(m_raw, m_is_pct);
     c.try_skip_comma();
-    let y = to_pct(c.parse_pct_or_number()?);
+    let (y_raw, y_is_pct) = c.parse_pct_or_number()?;
+    let y = to_pct(y_raw, y_is_pct);
     c.try_skip_comma();
-    let k = to_pct(c.parse_pct_or_number()?);
+    let (k_raw, k_is_pct) = c.parse_pct_or_number()?;
+    let k = to_pct(k_raw, k_is_pct);
     let mut alpha = None;
     if c.peek() == Some(b'/') {
         alpha = Some(c.parse_alpha()?);
     }
     let alpha = alpha.map(|a| a.clamp(0.0, 1.0));
-    let alpha = if alpha == Some(1.0) || alpha.is_none() { None } else { alpha };
+    let alpha = if alpha == Some(1.0) || alpha.is_none() {
+        None
+    } else {
+        alpha
+    };
     Ok(Color {
         kind: ColorKind::DeviceCmyk {
             c: cmyk_c,
@@ -1931,27 +2323,15 @@ impl fmt::Display for Color {
                 None => write!(f, "rgb({}, {}, {})", r, g, b).map(|_| ()),
             },
             ColorKind::Hsl { h, s, l, alpha } => match alpha {
-                Some(a) => write!(
-                    f,
-                    "hsla({}, {}%, {}%, {})",
-                    h,
-                    s.value(),
-                    l.value(),
-                    a
-                )
-                .map(|_| ()),
+                Some(a) => {
+                    write!(f, "hsla({}, {}%, {}%, {})", h, s.value(), l.value(), a).map(|_| ())
+                }
                 None => write!(f, "hsl({}, {}%, {}%)", h, s.value(), l.value()).map(|_| ()),
             },
             ColorKind::Hwb { h, w, b, alpha } => match alpha {
-                Some(a) => write!(
-                    f,
-                    "hwb({} {}% {}% / {})",
-                    h,
-                    w.value(),
-                    b.value(),
-                    a
-                )
-                .map(|_| ()),
+                Some(a) => {
+                    write!(f, "hwb({} {}% {}% / {})", h, w.value(), b.value(), a).map(|_| ())
+                }
                 None => write!(f, "hwb({} {}% {}%)", h, w.value(), b.value()).map(|_| ()),
             },
             ColorKind::Lab { l, a, b, alpha } => {
@@ -1982,7 +2362,11 @@ impl fmt::Display for Color {
                 };
                 write!(f, "oklch({}% {} {}{})", l.value(), c, h, a_str).map(|_| ())
             }
-            ColorKind::Color { space, channels, alpha } => {
+            ColorKind::Color {
+                space,
+                channels,
+                alpha,
+            } => {
                 let mut s = format!("color({}", space);
                 for ch in channels.iter() {
                     s.push(' ');
@@ -1999,7 +2383,10 @@ impl fmt::Display for Color {
                     ColorMixMethod::Shorter => String::new(),
                     m => format!(" {} hue", m),
                 };
-                let s = format!("color-mix(in {}{}, {}, {} {})", m.space, method_str, m.a, m.b, m.percentage);
+                let s = format!(
+                    "color-mix(in {}{}, {}, {} {})",
+                    m.space, method_str, m.a, m.b, m.percentage
+                );
                 f.write_str(&s)
             }
             ColorKind::ColorContrast { colors, target } => {
@@ -2085,50 +2472,152 @@ impl PartialEq for ColorKind {
         match (self, other) {
             (ColorKind::Named(a), ColorKind::Named(b)) => a == b,
             (
-                ColorKind::Rgb { r: r1, g: g1, b: b1, alpha: a1 },
-                ColorKind::Rgb { r: r2, g: g2, b: b2, alpha: a2 },
+                ColorKind::Rgb {
+                    r: r1,
+                    g: g1,
+                    b: b1,
+                    alpha: a1,
+                },
+                ColorKind::Rgb {
+                    r: r2,
+                    g: g2,
+                    b: b2,
+                    alpha: a2,
+                },
             ) => r1 == r2 && g1 == g2 && b1 == b2 && a1 == a2,
             (
-                ColorKind::Hsl { h: h1, s: s1, l: l1, alpha: a1 },
-                ColorKind::Hsl { h: h2, s: s2, l: l2, alpha: a2 },
+                ColorKind::Hsl {
+                    h: h1,
+                    s: s1,
+                    l: l1,
+                    alpha: a1,
+                },
+                ColorKind::Hsl {
+                    h: h2,
+                    s: s2,
+                    l: l2,
+                    alpha: a2,
+                },
             ) => h1 == h2 && s1 == s2 && l1 == l2 && a1 == a2,
             (
-                ColorKind::Hwb { h: h1, w: w1, b: b1, alpha: a1 },
-                ColorKind::Hwb { h: h2, w: w2, b: b2, alpha: a2 },
+                ColorKind::Hwb {
+                    h: h1,
+                    w: w1,
+                    b: b1,
+                    alpha: a1,
+                },
+                ColorKind::Hwb {
+                    h: h2,
+                    w: w2,
+                    b: b2,
+                    alpha: a2,
+                },
             ) => h1 == h2 && w1 == w2 && b1 == b2 && a1 == a2,
             (
-                ColorKind::Lab { l: l1, a: a1, b: b1, alpha: a2 },
-                ColorKind::Lab { l: l2, a: a3, b: b2, alpha: a4 },
+                ColorKind::Lab {
+                    l: l1,
+                    a: a1,
+                    b: b1,
+                    alpha: a2,
+                },
+                ColorKind::Lab {
+                    l: l2,
+                    a: a3,
+                    b: b2,
+                    alpha: a4,
+                },
             ) => l1 == l2 && a1 == a3 && b1 == b2 && a2 == a4,
             (
-                ColorKind::Lch { l: l1, c: c1, h: h1, alpha: a1 },
-                ColorKind::Lch { l: l2, c: c2, h: h2, alpha: a2 },
+                ColorKind::Lch {
+                    l: l1,
+                    c: c1,
+                    h: h1,
+                    alpha: a1,
+                },
+                ColorKind::Lch {
+                    l: l2,
+                    c: c2,
+                    h: h2,
+                    alpha: a2,
+                },
             ) => l1 == l2 && c1 == c2 && h1 == h2 && a1 == a2,
             (
-                ColorKind::Oklab { l: l1, a: a1, b: b1, alpha: a2 },
-                ColorKind::Oklab { l: l2, a: a3, b: b2, alpha: a4 },
+                ColorKind::Oklab {
+                    l: l1,
+                    a: a1,
+                    b: b1,
+                    alpha: a2,
+                },
+                ColorKind::Oklab {
+                    l: l2,
+                    a: a3,
+                    b: b2,
+                    alpha: a4,
+                },
             ) => l1 == l2 && a1 == a3 && b1 == b2 && a2 == a4,
             (
-                ColorKind::Oklch { l: l1, c: c1, h: h1, alpha: a1 },
-                ColorKind::Oklch { l: l2, c: c2, h: h2, alpha: a2 },
+                ColorKind::Oklch {
+                    l: l1,
+                    c: c1,
+                    h: h1,
+                    alpha: a1,
+                },
+                ColorKind::Oklch {
+                    l: l2,
+                    c: c2,
+                    h: h2,
+                    alpha: a2,
+                },
             ) => l1 == l2 && c1 == c2 && h1 == h2 && a1 == a2,
             (
-                ColorKind::Color { space: s1, channels: c1, alpha: a1 },
-                ColorKind::Color { space: s2, channels: c2, alpha: a2 },
+                ColorKind::Color {
+                    space: s1,
+                    channels: c1,
+                    alpha: a1,
+                },
+                ColorKind::Color {
+                    space: s2,
+                    channels: c2,
+                    alpha: a2,
+                },
             ) => s1 == s2 && c1 == c2 && a1 == a2,
             (ColorKind::ColorMix(a), ColorKind::ColorMix(b)) => a == b,
             (
-                ColorKind::ColorContrast { colors: c1, target: t1 },
-                ColorKind::ColorContrast { colors: c2, target: t2 },
+                ColorKind::ColorContrast {
+                    colors: c1,
+                    target: t1,
+                },
+                ColorKind::ColorContrast {
+                    colors: c2,
+                    target: t2,
+                },
             ) => c1 == c2 && t1 == t2,
             (
-                ColorKind::DeviceCmyk { c: c1, m: m1, y: y1, k: k1, alpha: a1 },
-                ColorKind::DeviceCmyk { c: c2, m: m2, y: y2, k: k2, alpha: a2 },
+                ColorKind::DeviceCmyk {
+                    c: c1,
+                    m: m1,
+                    y: y1,
+                    k: k1,
+                    alpha: a1,
+                },
+                ColorKind::DeviceCmyk {
+                    c: c2,
+                    m: m2,
+                    y: y2,
+                    k: k2,
+                    alpha: a2,
+                },
             ) => c1 == c2 && m1 == m2 && y1 == y2 && k1 == k2 && a1 == a2,
             (ColorKind::System(a), ColorKind::System(b)) => a == b,
             (
-                ColorKind::LightDark { light: l1, dark: d1 },
-                ColorKind::LightDark { light: l2, dark: d2 },
+                ColorKind::LightDark {
+                    light: l1,
+                    dark: d1,
+                },
+                ColorKind::LightDark {
+                    light: l2,
+                    dark: d2,
+                },
             ) => l1 == l2 && d1 == d2,
             (ColorKind::CurrentColor, ColorKind::CurrentColor) => true,
             (ColorKind::Transparent, ColorKind::Transparent) => true,
@@ -2219,7 +2708,12 @@ mod tests {
     }
 
     fn as_color_fn(c: &ColorKind) -> Option<(&Ident, &[f32], Option<f32>)> {
-        if let ColorKind::Color { space, channels, alpha } = c {
+        if let ColorKind::Color {
+            space,
+            channels,
+            alpha,
+        } = c
+        {
             Some((space, channels, *alpha))
         } else {
             None
@@ -2327,7 +2821,15 @@ mod tests {
     #[test]
     fn parse_hex_8() {
         let c = Color::parse("#ff000080").unwrap();
-        assert!(matches!(c.kind, ColorKind::Rgb { r: 255, g: 0, b: 0, alpha: Some(0.5019608) }));
+        assert!(matches!(
+            c.kind,
+            ColorKind::Rgb {
+                r: 255,
+                g: 0,
+                b: 0,
+                alpha: Some(0.5019608)
+            }
+        ));
     }
 
     #[test]
@@ -2342,6 +2844,23 @@ mod tests {
         assert!(format!("{:?}", c.kind).contains("Rgb {"));
     }
 
+    #[test]
+    fn parse_named_color_with_alpha() {
+        let cases: [(&str, u8, u8, u8, f32); 3] = [
+            ("red / 0.5", 255, 0, 0, 0.5),
+            ("blue / 0.25", 0, 0, 255, 0.25),
+            ("rebeccapurple / 1", 102, 51, 153, 1.0),
+        ];
+        for (input, r, g, b, a) in cases {
+            let c = Color::parse(input).unwrap();
+            assert!(
+                matches!(c.kind, ColorKind::Rgb { r: rr, g: gg, b: bb, alpha: Some(aa) } if rr == r && gg == g && bb == b && (aa - a).abs() < 1e-6),
+                "failed for {input}: {:?}",
+                c.kind
+            );
+        }
+    }
+
     // ── parse: rgb / rgba (modern space syntax) ────────────────────
 
     #[test]
@@ -2353,7 +2872,9 @@ mod tests {
     #[test]
     fn parse_rgba_space() {
         let c = Color::parse("rgba(255 0 0 / 0.5)").unwrap();
-        assert!(matches!(c.kind, ColorKind::Rgb { r: 255, g: 0, b: 0, alpha: Some(a) } if (a - 0.5).abs() < 1e-6));
+        assert!(
+            matches!(c.kind, ColorKind::Rgb { r: 255, g: 0, b: 0, alpha: Some(a) } if (a - 0.5).abs() < 1e-6)
+        );
     }
 
     #[test]
@@ -2370,8 +2891,20 @@ mod tests {
 
     #[test]
     fn parse_rgb_mixed_numbers_and_percent() {
-        let c = Color::parse("rgb(255 0% 0)").unwrap();
-        assert!(format!("{:?}", c.kind).contains("Rgb {"));
+        let cases: [(&str, u8, u8, u8); 4] = [
+            ("rgb(128 50% 0)", 128, 128, 0),
+            ("rgb(50% 128 0)", 128, 128, 0),
+            ("rgb(255 0% 0)", 255, 0, 0),
+            ("rgb(100% 128 50%)", 255, 128, 128),
+        ];
+        for (input, r, g, b) in cases {
+            let c = Color::parse(input).unwrap();
+            assert!(
+                matches!(c.kind, ColorKind::Rgb { r: rr, g: gg, b: bb, alpha: None } if rr == r && gg == g && bb == b),
+                "failed for {input}: {:?}",
+                c.kind
+            );
+        }
     }
 
     // ── parse: rgb / rgba (legacy comma syntax) ────────────────────
@@ -2385,7 +2918,9 @@ mod tests {
     #[test]
     fn parse_rgba_legacy() {
         let c = Color::parse("rgba(255, 0, 0, 0.5)").unwrap();
-        assert!(matches!(c.kind, ColorKind::Rgb { r: 255, g: 0, b: 0, alpha: Some(a) } if (a - 0.5).abs() < 1e-6));
+        assert!(
+            matches!(c.kind, ColorKind::Rgb { r: 255, g: 0, b: 0, alpha: Some(a) } if (a - 0.5).abs() < 1e-6)
+        );
     }
 
     #[test]
@@ -2448,6 +2983,58 @@ mod tests {
     fn parse_hsl_invalid_unit_error() {
         // The `_ => Err(...)` branch in parse_hue for unknown units.
         assert!(Color::parse("hsl(0degX 50% 25%)").is_err());
+    }
+
+    #[test]
+    fn parse_rgb_none_channels() {
+        let cases: [(&str, u8, u8, u8); 5] = [
+            ("rgb(none 0 0)", 0, 0, 0),
+            ("rgb(255 none 0)", 255, 0, 0),
+            ("rgb(255 0 none)", 255, 0, 0),
+            ("rgb(none none none)", 0, 0, 0),
+            ("rgb(50% none 25%)", 128, 0, 64),
+        ];
+        for (input, er, eg, eb) in cases {
+            let c = Color::parse(input).unwrap();
+            let (r, g, b, _alpha) = as_rgb(&c.kind).expect("expected Rgb");
+            assert_eq!((r, g, b), (er, eg, eb), "{input}");
+        }
+    }
+
+    #[test]
+    fn parse_rgb_none_alpha_slash() {
+        let c = Color::parse("rgb(255 0 0 / none)").unwrap();
+        let (_r, _g, _b, alpha) = as_rgb(&c.kind).expect("expected Rgb");
+        assert!(alpha.is_none());
+    }
+
+    #[test]
+    fn parse_hsl_none_channels() {
+        let cases: [(&str, f32, f32, f32); 4] = [
+            ("hsl(none 50% 50%)", 0.0, 50.0, 50.0),
+            ("hsl(120 none 50%)", 120.0, 0.0, 50.0),
+            ("hsl(120 50% none)", 120.0, 50.0, 0.0),
+            ("hsl(none none none)", 0.0, 0.0, 0.0),
+        ];
+        for (input, eh, es, el) in cases {
+            let c = Color::parse(input).unwrap();
+            let (h, s, l, _alpha) = as_hsl(&c.kind).expect("expected Hsl");
+            assert!(
+                (h - eh).abs() < 1e-6
+                    && (s.value() - es).abs() < 1e-6
+                    && (l.value() - el).abs() < 1e-6,
+                "{input} -> hsl({h}, {}, {}) expected ({eh}, {es}, {el})",
+                s.value(),
+                l.value()
+            );
+        }
+    }
+
+    #[test]
+    fn parse_hsl_none_alpha_slash() {
+        let c = Color::parse("hsl(120 50% 50% / none)").unwrap();
+        let (_h, _s, _l, alpha) = as_hsl(&c.kind).expect("expected Hsl");
+        assert!(alpha.is_none());
     }
 
     // ── parse: hwb ─────────────────────────────────────────────────
@@ -2675,9 +3262,11 @@ mod tests {
     }
 
     #[test]
-    fn parse_garbage_is_system_color() {
-        let c = Color::parse("not-a-color").unwrap();
-        assert!(format!("{:?}", c.kind).contains("System("));
+    fn parse_unknown_identifier_fails() {
+        let cases: [&str; 4] = ["not-a-color", "foo_bar", "123", "rebeccapurple-not"];
+        for input in cases {
+            assert!(Color::parse(input).is_err(), "expected error for {input}");
+        }
     }
 
     #[test]
@@ -2958,6 +3547,21 @@ mod tests {
     }
 
     #[test]
+    fn parse_color_mix_percentage_on_first_color() {
+        let cases: [(&str, &str); 4] = [
+            ("color-mix(in srgb, red 30%, blue)", "blue 70%"),
+            ("color-mix(in srgb, red, blue 30%)", "blue 30%"),
+            ("color-mix(in srgb, red 30%, blue 70%)", "blue 70%"),
+            ("color-mix(in srgb, red, blue)", "blue 50%"),
+        ];
+        for (input, expected) in cases {
+            let c = Color::parse(input).unwrap();
+            let m = format!("{}", c);
+            assert!(m.contains(expected), "{input} rendered as {m}");
+        }
+    }
+
+    #[test]
     fn parse_color_mix_bad_percentage() {
         // L1673 c.parse_percentage()?
         assert!(Color::parse("color-mix(in srgb, red, blue xxx)").is_err());
@@ -3007,13 +3611,9 @@ mod tests {
     }
 
     #[test]
-    fn parse_light_dark_known_unknown_colors() {
-        // L1749/L1750 defensive `?` branches are now reachable via the
-        // parse_or_system fallback. Unknown names become System colors.
-        let c1 = Color::parse("light-dark(red, xxx)").unwrap();
+    fn parse_light_dark_known_colors() {
+        let c1 = Color::parse("light-dark(red, blue)").unwrap();
         assert!(format!("{:?}", c1.kind).contains("LightDark {"));
-        let c2 = Color::parse("light-dark(xxx, blue)").unwrap();
-        assert!(format!("{:?}", c2.kind).contains("LightDark {"));
     }
 
     #[test]
@@ -3446,17 +4046,26 @@ mod tests {
 
     #[test]
     fn display_hsl() {
-        assert_eq!(Color::hsl(120.0, 50.0_f32, 50.0_f32).to_string(), "hsl(120, 50%, 50%)");
+        assert_eq!(
+            Color::hsl(120.0, 50.0_f32, 50.0_f32).to_string(),
+            "hsl(120, 50%, 50%)"
+        );
     }
 
     #[test]
     fn display_hsla() {
-        assert_eq!(Color::hsla(120.0, 50.0_f32, 50.0_f32, 0.5).to_string(), "hsla(120, 50%, 50%, 0.5)");
+        assert_eq!(
+            Color::hsla(120.0, 50.0_f32, 50.0_f32, 0.5).to_string(),
+            "hsla(120, 50%, 50%, 0.5)"
+        );
     }
 
     #[test]
     fn display_hwb() {
-        assert_eq!(Color::hwb(0.0, 30.0_f32, 30.0_f32).to_string(), "hwb(0 30% 30%)");
+        assert_eq!(
+            Color::hwb(0.0, 30.0_f32, 30.0_f32).to_string(),
+            "hwb(0 30% 30%)"
+        );
     }
 
     #[test]
@@ -3474,7 +4083,10 @@ mod tests {
 
     #[test]
     fn display_lab() {
-        assert_eq!(Color::lab(50.0_f32, 40.0, -20.0).to_string(), "lab(50% 40 -20)");
+        assert_eq!(
+            Color::lab(50.0_f32, 40.0, -20.0).to_string(),
+            "lab(50% 40 -20)"
+        );
     }
 
     #[test]
@@ -3498,7 +4110,10 @@ mod tests {
 
     #[test]
     fn display_oklab() {
-        assert_eq!(Color::oklab(60.0_f32, 0.1, -0.05).to_string(), "oklab(60% 0.1 -0.05)");
+        assert_eq!(
+            Color::oklab(60.0_f32, 0.1, -0.05).to_string(),
+            "oklab(60% 0.1 -0.05)"
+        );
     }
 
     #[test]
@@ -3560,7 +4175,10 @@ mod tests {
             ColorMixSpace::Oklch,
             ColorMixMethod::Shorter,
         );
-        assert_eq!(c.to_string(), "color-mix(in oklch, rgb(255, 0, 0), rgb(0, 0, 255) 50%)");
+        assert_eq!(
+            c.to_string(),
+            "color-mix(in oklch, rgb(255, 0, 0), rgb(0, 0, 255) 50%)"
+        );
     }
 
     #[test]
@@ -3571,7 +4189,10 @@ mod tests {
                 target: None,
             },
         };
-        assert_eq!(c.to_string(), "color-contrast(rgb(0, 0, 0), rgb(255, 255, 255))");
+        assert_eq!(
+            c.to_string(),
+            "color-contrast(rgb(0, 0, 0), rgb(255, 255, 255))"
+        );
     }
 
     #[test]
@@ -3582,7 +4203,10 @@ mod tests {
                 target: Some(Box::new(Color::rgb(255, 255, 255))),
             },
         };
-        assert_eq!(c.to_string(), "color-contrast(rgb(0, 0, 0) vs rgb(255, 255, 255))");
+        assert_eq!(
+            c.to_string(),
+            "color-contrast(rgb(0, 0, 0) vs rgb(255, 255, 255))"
+        );
     }
 
     #[test]
@@ -3624,7 +4248,12 @@ mod tests {
         assert_eq!(
             rgb,
             Color {
-                kind: ColorKind::Rgb { r: 255, g: 255, b: 255, alpha: None }
+                kind: ColorKind::Rgb {
+                    r: 255,
+                    g: 255,
+                    b: 255,
+                    alpha: None
+                }
             }
         );
     }
@@ -3637,7 +4266,12 @@ mod tests {
         assert_eq!(
             rgb,
             Color {
-                kind: ColorKind::Rgb { r: 0, g: 0, b: 0, alpha: None }
+                kind: ColorKind::Rgb {
+                    r: 0,
+                    g: 0,
+                    b: 0,
+                    alpha: None
+                }
             }
         );
     }
@@ -3651,7 +4285,12 @@ mod tests {
         assert_eq!(
             rgb,
             Color {
-                kind: ColorKind::Rgb { r: 255, g: 255, b: 255, alpha: None }
+                kind: ColorKind::Rgb {
+                    r: 255,
+                    g: 255,
+                    b: 255,
+                    alpha: None
+                }
             }
         );
     }
@@ -3664,7 +4303,12 @@ mod tests {
         assert_eq!(
             rgb,
             Color {
-                kind: ColorKind::Rgb { r: 0, g: 0, b: 0, alpha: None }
+                kind: ColorKind::Rgb {
+                    r: 0,
+                    g: 0,
+                    b: 0,
+                    alpha: None
+                }
             }
         );
     }
@@ -3677,7 +4321,12 @@ mod tests {
         assert_eq!(
             rgb,
             Color {
-                kind: ColorKind::Rgb { r: 0, g: 0, b: 0, alpha: None }
+                kind: ColorKind::Rgb {
+                    r: 0,
+                    g: 0,
+                    b: 0,
+                    alpha: None
+                }
             }
         );
     }
@@ -3709,10 +4358,7 @@ mod tests {
                 alpha: Some(0.5),
             },
         };
-        assert_eq!(
-            c.to_string(),
-            "device-cmyk(0% 100% 100% 0% / 0.5)"
-        );
+        assert_eq!(c.to_string(), "device-cmyk(0% 100% 100% 0% / 0.5)");
     }
 
     #[test]
@@ -3726,7 +4372,10 @@ mod tests {
     #[test]
     fn display_light_dark() {
         let c = Color::light_dark(Color::rgb(255, 255, 255), Color::rgb(0, 0, 0));
-        assert_eq!(c.to_string(), "light-dark(rgb(255, 255, 255), rgb(0, 0, 0))");
+        assert_eq!(
+            c.to_string(),
+            "light-dark(rgb(255, 255, 255), rgb(0, 0, 0))"
+        );
     }
 
     #[test]
@@ -3826,10 +4475,9 @@ mod tests {
         // hsl(120, 100%, 50%) ≈ rgb(0, 255, 0)
         let (r, g, b, alpha) = as_rgb(&rgb.into_kind()).expect("expected Rgb");
 
-                            assert_eq!(r, 0);
-                            assert_eq!(g, 255);
-                            assert_eq!(b, 0);
-            
+        assert_eq!(r, 0);
+        assert_eq!(g, 255);
+        assert_eq!(b, 0);
     }
 
     #[test]
@@ -3838,10 +4486,9 @@ mod tests {
         let rgb = c.into_rgb().unwrap();
         let (r, g, b, alpha) = as_rgb(&rgb.into_kind()).expect("expected Rgb");
 
-                            assert_eq!(r, 255);
-                            assert_eq!(g, 0);
-                            assert_eq!(b, 0);
-            
+        assert_eq!(r, 255);
+        assert_eq!(g, 0);
+        assert_eq!(b, 0);
     }
 
     #[test]
@@ -3858,10 +4505,9 @@ mod tests {
         let rgb = c.into_rgb().unwrap();
         let (r, g, b, alpha) = as_rgb(&rgb.into_kind()).expect("expected Rgb");
 
-                            // All channels should be close
-                            assert!((r as i16 - g as i16).abs() <= 1);
-                            assert!((g as i16 - b as i16).abs() <= 1);
-            
+        // All channels should be close
+        assert!((r as i16 - g as i16).abs() <= 1);
+        assert!((g as i16 - b as i16).abs() <= 1);
     }
 
     #[test]
@@ -3876,7 +4522,6 @@ mod tests {
         };
         let rgb = c.into_rgb().unwrap();
         let (r, g, b, alpha) = as_rgb(&rgb.into_kind()).expect("expected Rgb");
-
     }
 
     #[test]
@@ -3885,10 +4530,9 @@ mod tests {
         let rgb = c.into_rgb().unwrap();
         let (r, g, b, alpha) = as_rgb(&rgb.into_kind()).expect("expected Rgb");
 
-                            assert_eq!(r, 255);
-                            assert_eq!(g, 0);
-                            assert_eq!(b, 0);
-            
+        assert_eq!(r, 255);
+        assert_eq!(g, 0);
+        assert_eq!(b, 0);
     }
 
     #[test]
@@ -3897,10 +4541,9 @@ mod tests {
         let rgb = c.into_rgb().unwrap();
         let (r, g, b, alpha) = as_rgb(&rgb.into_kind()).expect("expected Rgb");
 
-                            assert_eq!(r, 102);
-                            assert_eq!(g, 51);
-                            assert_eq!(b, 153);
-            
+        assert_eq!(r, 102);
+        assert_eq!(g, 51);
+        assert_eq!(b, 153);
     }
 
     #[test]
@@ -3917,7 +4560,6 @@ mod tests {
         let (r, g, b, alpha) = as_rgb(&rgb.into_kind()).expect("expected Rgb");
 
         assert!(r > 0 || g > 0 || b > 0);
-
     }
 
     #[test]
@@ -3984,10 +4626,9 @@ mod tests {
         let rgb = c.into_rgb().unwrap();
         let (r, g, b, alpha) = as_rgb(&rgb.into_kind()).expect("expected Rgb");
 
-                            assert_eq!(r, 128);
-                            assert_eq!(g, 64);
-                            assert_eq!(b, 32);
-            
+        assert_eq!(r, 128);
+        assert_eq!(g, 64);
+        assert_eq!(b, 32);
     }
 
     #[test]
@@ -4002,7 +4643,6 @@ mod tests {
         };
         let rgb = c.into_rgb().unwrap();
         let (r, g, b, alpha) = as_rgb(&rgb.into_kind()).expect("expected Rgb");
-
     }
 
     #[test]
@@ -4036,10 +4676,9 @@ mod tests {
         let hsl = rgb.into_hsl().unwrap();
         let (h, s, l, alpha) = as_hsl(&hsl.into_kind()).expect("expected Hsl");
 
-                            assert!((h - 180.0).abs() < 2.0);
-                            assert!((s.value() - 50.0).abs() < 2.0);
-                            assert!((l.value() - 25.0).abs() < 2.0);
-            
+        assert!((h - 180.0).abs() < 2.0);
+        assert!((s.value() - 50.0).abs() < 2.0);
+        assert!((l.value() - 25.0).abs() < 2.0);
     }
 
     // ── into_oklab ────────────────────────────────────────────────
@@ -4050,11 +4689,10 @@ mod tests {
         let oklab = c.into_oklab().unwrap();
         let (l, a, b, alpha) = as_oklab(&oklab.into_kind()).expect("expected Oklab");
 
-                            // sRGB red → OKLab (L ≈ 0.63, a > 0, b > 0)
-                            assert_approx_eq!(l.value(), 62.0, 5.0);
-                            assert!(a > 0.1);
-                            assert!(b > 0.0);
-            
+        // sRGB red → OKLab (L ≈ 0.63, a > 0, b > 0)
+        assert_approx_eq!(l.value(), 62.0, 5.0);
+        assert!(a > 0.1);
+        assert!(b > 0.0);
     }
 
     #[test]
@@ -4094,9 +4732,8 @@ mod tests {
         let back = rgb.into_oklch().unwrap();
         let (l, c, h, alpha) = as_oklch(&back.into_kind()).expect("expected Oklch");
 
-                            assert!((l.value() - 60.0).abs() < 2.0);
-                            assert!((h.to_degrees() - 270.0).abs() < 2.0);
-            
+        assert!((l.value() - 60.0).abs() < 2.0);
+        assert!((h.to_degrees() - 270.0).abs() < 2.0);
     }
 
     // ── into_hex ──────────────────────────────────────────────────
@@ -4188,17 +4825,48 @@ mod tests {
     }
 
     #[test]
-    fn into_rgb_from_lab_returns_unresolvable() {
-        let c = Color::parse("lab(50% 0 0)").unwrap();
-        let result = c.into_rgb();
-        assert!(result.is_err());
+    fn into_rgb_from_lab_and_lch_are_resolvable() {
+        let cases = [("lab(50% 0 0)", true), ("lch(50% 0 0)", true)];
+        for (input, should_succeed) in cases {
+            let c = Color::parse(input).unwrap();
+            assert_eq!(c.into_rgb().is_ok(), should_succeed, "{input}");
+        }
     }
 
     #[test]
-    fn into_rgb_from_lch_returns_unresolvable() {
-        let c = Color::parse("lch(50% 0 0)").unwrap();
-        let result = c.into_rgb();
-        assert!(result.is_err());
+    fn into_hsl_from_lab_and_lch_are_resolvable() {
+        let cases = [("lab(50% 0 0)", true), ("lch(50% 0 0)", true)];
+        for (input, should_succeed) in cases {
+            let c = Color::parse(input).unwrap();
+            assert_eq!(c.into_hsl().is_ok(), should_succeed, "{input}");
+        }
+    }
+
+    #[test]
+    fn into_oklab_from_lab_and_lch_are_resolvable() {
+        let cases = [("lab(50% 0 0)", true), ("lch(50% 0 0)", true)];
+        for (input, should_succeed) in cases {
+            let c = Color::parse(input).unwrap();
+            assert_eq!(c.into_oklab().is_ok(), should_succeed, "{input}");
+        }
+    }
+
+    #[test]
+    fn into_oklch_from_lab_and_lch_are_resolvable() {
+        let cases = [("lab(50% 0 0)", true), ("lch(50% 0 0)", true)];
+        for (input, should_succeed) in cases {
+            let c = Color::parse(input).unwrap();
+            assert_eq!(c.into_oklch().is_ok(), should_succeed, "{input}");
+        }
+    }
+
+    #[test]
+    fn into_hex_from_lab_and_lch_are_resolvable() {
+        let cases = [("lab(50% 0 0)", true), ("lch(50% 0 0)", true)];
+        for (input, should_succeed) in cases {
+            let c = Color::parse(input).unwrap();
+            assert_eq!(c.into_hex().is_ok(), should_succeed, "{input}");
+        }
     }
 
     #[test]
@@ -4232,62 +4900,6 @@ mod tests {
         // Color() with an unknown space returns Unresolvable
         let c = Color::parse("color(banana 1 0 0)").unwrap();
         let result = c.into_rgb();
-        assert!(result.is_err());
-    }
-
-    #[test]
-    fn into_hsl_from_lab_returns_unresolvable() {
-        let c = Color::parse("lab(50% 0 0)").unwrap();
-        let result = c.into_hsl();
-        assert!(result.is_err());
-    }
-
-    #[test]
-    fn into_hsl_from_lch_returns_unresolvable() {
-        let c = Color::parse("lch(50% 0 0)").unwrap();
-        let result = c.into_hsl();
-        assert!(result.is_err());
-    }
-
-    #[test]
-    fn into_oklab_from_lab_returns_unresolvable() {
-        let c = Color::parse("lab(50% 0 0)").unwrap();
-        let result = c.into_oklab();
-        assert!(result.is_err());
-    }
-
-    #[test]
-    fn into_oklab_from_lch_returns_unresolvable() {
-        let c = Color::parse("lch(50% 0 0)").unwrap();
-        let result = c.into_oklab();
-        assert!(result.is_err());
-    }
-
-    #[test]
-    fn into_oklch_from_lab_returns_unresolvable() {
-        let c = Color::parse("lab(50% 0 0)").unwrap();
-        let result = c.into_oklch();
-        assert!(result.is_err());
-    }
-
-    #[test]
-    fn into_oklch_from_lch_returns_unresolvable() {
-        let c = Color::parse("lch(50% 0 0)").unwrap();
-        let result = c.into_oklch();
-        assert!(result.is_err());
-    }
-
-    #[test]
-    fn into_hex_from_lab_returns_unresolvable() {
-        let c = Color::parse("lab(50% 0 0)").unwrap();
-        let result = c.into_hex();
-        assert!(result.is_err());
-    }
-
-    #[test]
-    fn into_hex_from_lch_returns_unresolvable() {
-        let c = Color::parse("lch(50% 0 0)").unwrap();
-        let result = c.into_hex();
         assert!(result.is_err());
     }
 
@@ -4334,41 +4946,42 @@ mod tests {
 
     #[test]
     fn into_rgb_from_color_contrast_with_lab() {
-        // First color is lab (unresolvable to sRGB) — triggers `to_srgb_float()?`
-        // error branch in resolve_color_contrast (L599).
+        // lab() is now resolvable to sRGB, so color-contrast can proceed.
         let c = Color::parse("color-contrast(lab(50% 0 0) vs wheat, tan, sienna)").unwrap();
         let result = c.into_rgb();
-        assert!(result.is_err());
+        assert!(result.is_ok());
     }
 
     #[test]
     fn into_rgb_from_color_contrast_with_lch() {
+        // lch() is now resolvable to sRGB, so color-contrast can proceed.
         let c = Color::parse("color-contrast(lch(50% 0 0) vs wheat, tan, sienna)").unwrap();
         let result = c.into_rgb();
-        assert!(result.is_err());
+        assert!(result.is_ok());
     }
 
     #[test]
     fn into_rgb_from_color_mix_with_lab() {
-        // Color-mix with Lab should hit `to_srgb_float()?` error in resolve_color_mix (L652, L653).
+        // Color-mix in Lab now interpolates in Lab space.
         let c = Color::parse("color-mix(in lab, lab(50% 0 0), lab(50% 20 -10))").unwrap();
         let result = c.into_rgb();
-        assert!(result.is_err());
+        assert!(result.is_ok());
     }
 
     #[test]
     fn into_rgb_from_color_mix_with_lch() {
+        // Color-mix in Lch now interpolates in Lch space.
         let c = Color::parse("color-mix(in lch, lch(50% 0 0), lch(50% 30 180))").unwrap();
         let result = c.into_rgb();
-        assert!(result.is_err());
+        assert!(result.is_ok());
     }
 
     #[test]
     fn into_rgb_from_color_mix_with_lch_b_only() {
-        // Only m.b is Lch — L652 succeeds, L653 fails
+        // Both colors are now resolvable, so Lch interpolation succeeds.
         let c = Color::parse("color-mix(in lch, red, lch(50% 30 180))").unwrap();
         let result = c.into_rgb();
-        assert!(result.is_err());
+        assert!(result.is_ok());
     }
 
     #[test]
@@ -5039,7 +5652,11 @@ mod tests {
             let k = (n + h_norm * 12.0) % 12.0;
             l - a * (k - 3.0).min(9.0 - k).clamp(-1.0, 1.0)
         };
-        (f(0.0).clamp(0.0, 1.0), f(8.0).clamp(0.0, 1.0), f(4.0).clamp(0.0, 1.0))
+        (
+            f(0.0).clamp(0.0, 1.0),
+            f(8.0).clamp(0.0, 1.0),
+            f(4.0).clamp(0.0, 1.0),
+        )
     }
 
     // ── From<Number> and From<Integer> ──────────────────────────
@@ -5067,7 +5684,10 @@ mod tests {
         let _ = format!("{:?}", Color::parse("oklab(0 0 0)").unwrap());
         let _ = format!("{:?}", Color::parse("oklch(0 0 0)").unwrap());
         let _ = format!("{:?}", Color::parse("color(srgb 0 0 0)").unwrap());
-        let _ = format!("{:?}", Color::parse("color-mix(in srgb, red, blue)").unwrap());
+        let _ = format!(
+            "{:?}",
+            Color::parse("color-mix(in srgb, red, blue)").unwrap()
+        );
         let _ = format!("{:?}", Color::parse("color-contrast(red, blue)").unwrap());
         let _ = format!("{:?}", Color::parse("device-cmyk(0 0 0 0)").unwrap());
         let _ = format!("{:?}", Color::parse("canvas").unwrap());
@@ -5156,13 +5776,48 @@ mod tests {
         // extractor on a non-matching variant. This exercises the
         // `else { None }` branch of every helper, so each helper's
         // regions stay at 100%.
-        let rgb = ColorKind::Rgb { r: 0, g: 0, b: 0, alpha: None };
-        let hsl = ColorKind::Hsl { h: 0.0, s: Percentage::new(0.0), l: Percentage::new(0.0), alpha: None };
-        let hwb = ColorKind::Hwb { h: 0.0, w: Percentage::new(0.0), b: Percentage::new(0.0), alpha: None };
-        let oklab = ColorKind::Oklab { l: Percentage::new(0.0), a: 0.0, b: 0.0, alpha: None };
-        let oklch = ColorKind::Oklch { l: Percentage::new(0.0), c: 0.0, h: Angle::deg(0.0), alpha: None };
-        let lab = ColorKind::Lab { l: Percentage::new(0.0), a: 0.0, b: 0.0, alpha: None };
-        let lch = ColorKind::Lch { l: Percentage::new(0.0), c: 0.0, h: Angle::deg(0.0), alpha: None };
+        let rgb = ColorKind::Rgb {
+            r: 0,
+            g: 0,
+            b: 0,
+            alpha: None,
+        };
+        let hsl = ColorKind::Hsl {
+            h: 0.0,
+            s: Percentage::new(0.0),
+            l: Percentage::new(0.0),
+            alpha: None,
+        };
+        let hwb = ColorKind::Hwb {
+            h: 0.0,
+            w: Percentage::new(0.0),
+            b: Percentage::new(0.0),
+            alpha: None,
+        };
+        let oklab = ColorKind::Oklab {
+            l: Percentage::new(0.0),
+            a: 0.0,
+            b: 0.0,
+            alpha: None,
+        };
+        let oklch = ColorKind::Oklch {
+            l: Percentage::new(0.0),
+            c: 0.0,
+            h: Angle::deg(0.0),
+            alpha: None,
+        };
+        let lab = ColorKind::Lab {
+            l: Percentage::new(0.0),
+            a: 0.0,
+            b: 0.0,
+            alpha: None,
+        };
+        let lch = ColorKind::Lch {
+            l: Percentage::new(0.0),
+            c: 0.0,
+            h: Angle::deg(0.0),
+            alpha: None,
+        };
         let named = ColorKind::Named(Ident::from("x"));
         let cmyk = ColorKind::DeviceCmyk {
             c: Percentage::new(0.0),
@@ -5500,7 +6155,7 @@ mod tests {
         let _ = Color::parse("hwb(0,20%,30%)").unwrap();
     }
 
-#[test]
+    #[test]
     fn parse_color_mix_unknown_space() {
         // Unknown interpolation space.
         assert!(Color::parse("color-mix(in xyz, red, blue)").is_err());
@@ -5550,13 +6205,13 @@ mod tests {
         let _ = Color::parse("lab(50% 0 0, 0.5)");
     }
 
-#[test]
+    #[test]
     fn parse_hsl_legacy_alpha_path2() {
         // space-separated (no comma) → parse_number branch
         let _ = Color::parse("hsl(0 100% 50% 0.5)");
     }
 
-#[test]
+    #[test]
     fn parse_lch_with_legacy_alpha() {
         let _ = Color::parse("lch(50% 0 0, 0.5)");
     }
@@ -5622,38 +6277,153 @@ mod tests {
         // All 148 CSS Color 4 named colors must parse. This exercises
         // every arm of the named color match in `named_to_srgb`.
         const NAMES: &[&str] = &[
-            "aliceblue", "antiquewhite", "aqua", "aquamarine", "azure",
-            "beige", "bisque", "black", "blanchedalmond", "blue",
-            "blueviolet", "brown", "burlywood", "cadetblue", "chartreuse",
-            "chocolate", "coral", "cornflowerblue", "cornsilk", "crimson",
-            "cyan", "darkblue", "darkcyan", "darkgoldenrod", "darkgray",
-            "darkgrey", "darkgreen", "darkkhaki", "darkmagenta", "darkolivegreen",
-            "darkorange", "darkorchid", "darkred", "darksalmon", "darkseagreen",
-            "darkslateblue", "darkslategray", "darkslategrey", "darkturquoise",
-            "darkviolet", "deeppink", "deepskyblue", "dimgray", "dimgrey",
-            "dodgerblue", "firebrick", "floralwhite", "forestgreen", "fuchsia",
-            "gainsboro", "ghostwhite", "gold", "goldenrod", "gray",
-            "grey", "green", "greenyellow", "honeydew", "hotpink",
-            "indianred", "indigo", "ivory", "khaki", "lavender",
-            "lavenderblush", "lawngreen", "lemonchiffon", "lightblue", "lightcoral",
-            "lightcyan", "lightgoldenrodyellow", "lightgray", "lightgreen",
-            "lightgrey", "lightpink", "lightsalmon", "lightseagreen",
+            "aliceblue",
+            "antiquewhite",
+            "aqua",
+            "aquamarine",
+            "azure",
+            "beige",
+            "bisque",
+            "black",
+            "blanchedalmond",
+            "blue",
+            "blueviolet",
+            "brown",
+            "burlywood",
+            "cadetblue",
+            "chartreuse",
+            "chocolate",
+            "coral",
+            "cornflowerblue",
+            "cornsilk",
+            "crimson",
+            "cyan",
+            "darkblue",
+            "darkcyan",
+            "darkgoldenrod",
+            "darkgray",
+            "darkgrey",
+            "darkgreen",
+            "darkkhaki",
+            "darkmagenta",
+            "darkolivegreen",
+            "darkorange",
+            "darkorchid",
+            "darkred",
+            "darksalmon",
+            "darkseagreen",
+            "darkslateblue",
+            "darkslategray",
+            "darkslategrey",
+            "darkturquoise",
+            "darkviolet",
+            "deeppink",
+            "deepskyblue",
+            "dimgray",
+            "dimgrey",
+            "dodgerblue",
+            "firebrick",
+            "floralwhite",
+            "forestgreen",
+            "fuchsia",
+            "gainsboro",
+            "ghostwhite",
+            "gold",
+            "goldenrod",
+            "gray",
+            "grey",
+            "green",
+            "greenyellow",
+            "honeydew",
+            "hotpink",
+            "indianred",
+            "indigo",
+            "ivory",
+            "khaki",
+            "lavender",
+            "lavenderblush",
+            "lawngreen",
+            "lemonchiffon",
+            "lightblue",
+            "lightcoral",
+            "lightcyan",
+            "lightgoldenrodyellow",
+            "lightgray",
+            "lightgreen",
+            "lightgrey",
+            "lightpink",
+            "lightsalmon",
+            "lightseagreen",
             "lightskyblue",
-            "lightslategray", "lightslategrey", "lightsteelblue", "lightyellow",
-            "lime", "limegreen", "linen", "magenta", "maroon",
-            "mediumaquamarine", "mediumblue", "mediumorchid", "mediumpurple",
-            "mediumseagreen", "mediumslateblue", "mediumspringgreen",
-            "mediumturquoise", "mediumvioletred", "midnightblue", "mintcream",
-            "mistyrose", "moccasin", "navajowhite", "navy", "oldlace",
-            "olive", "olivedrab", "orange", "orangered", "orchid",
-            "palegoldenrod", "palegreen", "paleturquoise", "palevioletred",
-            "papayawhip", "peachpuff", "peru", "pink", "plum",
-            "powderblue", "purple", "rebeccapurple", "red", "rosybrown",
-            "royalblue", "saddlebrown", "salmon", "sandybrown", "seagreen",
-            "seashell", "sienna", "silver", "skyblue", "slateblue",
-            "slategray", "slategrey", "snow", "springgreen", "steelblue",
-            "tan", "teal", "thistle", "tomato", "turquoise",
-            "violet", "wheat", "white", "whitesmoke", "yellow",
+            "lightslategray",
+            "lightslategrey",
+            "lightsteelblue",
+            "lightyellow",
+            "lime",
+            "limegreen",
+            "linen",
+            "magenta",
+            "maroon",
+            "mediumaquamarine",
+            "mediumblue",
+            "mediumorchid",
+            "mediumpurple",
+            "mediumseagreen",
+            "mediumslateblue",
+            "mediumspringgreen",
+            "mediumturquoise",
+            "mediumvioletred",
+            "midnightblue",
+            "mintcream",
+            "mistyrose",
+            "moccasin",
+            "navajowhite",
+            "navy",
+            "oldlace",
+            "olive",
+            "olivedrab",
+            "orange",
+            "orangered",
+            "orchid",
+            "palegoldenrod",
+            "palegreen",
+            "paleturquoise",
+            "palevioletred",
+            "papayawhip",
+            "peachpuff",
+            "peru",
+            "pink",
+            "plum",
+            "powderblue",
+            "purple",
+            "rebeccapurple",
+            "red",
+            "rosybrown",
+            "royalblue",
+            "saddlebrown",
+            "salmon",
+            "sandybrown",
+            "seagreen",
+            "seashell",
+            "sienna",
+            "silver",
+            "skyblue",
+            "slateblue",
+            "slategray",
+            "slategrey",
+            "snow",
+            "springgreen",
+            "steelblue",
+            "tan",
+            "teal",
+            "thistle",
+            "tomato",
+            "turquoise",
+            "violet",
+            "wheat",
+            "white",
+            "whitesmoke",
+            "yellow",
             "yellowgreen",
         ];
         assert_eq!(NAMES.len(), 148, "named color list must match spec count");
@@ -5668,15 +6438,39 @@ mod tests {
     }
 
     #[test]
-    fn parse_unknown_name_is_system_color() {
-        // Exercise both branches of the matches! macro:
-        // - "notacolor" → System color (true)
-        // - "red" → Named color (false)
-        for (input, expected_system) in [("notacolor", true), ("red", false)] {
+    fn parse_system_vs_named_color() {
+        let system_cases: [&str; 5] = [
+            "canvas",
+            "CanvasText",
+            "LinkText",
+            "ButtonFace",
+            "Highlight",
+        ];
+        for input in system_cases {
             let c = Color::parse(input).unwrap();
-            let is_system = matches!(c.kind, ColorKind::System(_));
-            assert_eq!(is_system, expected_system);
+            assert!(
+                matches!(c.kind, ColorKind::System(_)),
+                "{input} should be a system color"
+            );
         }
+
+        let named_cases: [(&str, &str); 3] = [
+            ("red", "red"),
+            ("blue", "blue"),
+            ("RebeccaPurple", "rebeccapurple"),
+        ];
+        for (input, expected_name) in named_cases {
+            let c = Color::parse(input).unwrap();
+            assert!(
+                matches!(c.kind, ColorKind::Named(ref i) if i.0.as_ref() == expected_name),
+                "{input} should be Named({expected_name})"
+            );
+        }
+    }
+
+    #[test]
+    fn parse_unknown_name_fails() {
+        assert!(Color::parse("notacolor").is_err());
     }
 
     #[test]
@@ -5703,5 +6497,135 @@ mod tests {
     #[test]
     fn parse_color_mix_no_color_value() {
         assert!(Color::parse("color-mix(in srgb)").is_err());
+    }
+
+    // ── CIE Lab / LCH conversions ──────────────────────────────────
+
+    #[test]
+    fn lab_to_srgb_known_values() {
+        // Reference values computed with the CSS Color 4 matrices (D50).
+        let cases: [(f32, f32, f32, f32, f32, f32); 3] = [
+            (50.0, 0.0, 0.0, 0.4663, 0.4663, 0.4663),
+            (50.0, 20.0, -10.0, 0.5736, 0.4187, 0.5356),
+            (70.0, 40.0, 60.0, 0.9915, 0.5471, 0.2344),
+        ];
+        for (l, a, b, er, eg, eb) in cases {
+            let c = Color::lab(l, a, b);
+            let srgb = c.to_srgb_float().unwrap();
+            assert!(
+                (srgb.r - er).abs() < 1e-3
+                    && (srgb.g - eg).abs() < 1e-3
+                    && (srgb.b - eb).abs() < 1e-3,
+                "lab({l} {a} {b}) -> rgb({}, {}, {}) expected ({er}, {eg}, {eb})",
+                srgb.r,
+                srgb.g,
+                srgb.b
+            );
+        }
+    }
+
+    #[test]
+    fn lch_to_srgb_known_values() {
+        let cases: [(f32, f32, f32, f32, f32, f32); 3] = [
+            (50.0, 0.0, 0.0, 0.4663, 0.4663, 0.4663),
+            (50.0, 30.0, 180.0, 0.1755, 0.5206, 0.4620),
+            (70.0, 50.0, 90.0, 0.7512, 0.6649, 0.2986),
+        ];
+        for (l, c, h, er, eg, eb) in cases {
+            let color = Color::lch(l, c, Angle::deg(h));
+            let srgb = color.to_srgb_float().unwrap();
+            assert!(
+                (srgb.r - er).abs() < 1e-3
+                    && (srgb.g - eg).abs() < 1e-3
+                    && (srgb.b - eb).abs() < 1e-3,
+                "lch({l} {c} {h}) -> rgb({}, {}, {}) expected ({er}, {eg}, {eb})",
+                srgb.r,
+                srgb.g,
+                srgb.b
+            );
+        }
+    }
+
+    #[test]
+    fn lab_lch_srgb_roundtrip() {
+        let cases: [(f32, f32, f32); 6] = [
+            (1.0, 0.0, 0.0),
+            (0.0, 1.0, 0.0),
+            (0.0, 0.0, 1.0),
+            (1.0, 1.0, 1.0),
+            (0.0, 0.0, 0.0),
+            (0.5, 0.5, 0.5),
+        ];
+        for (r, g, b) in cases {
+            let srgb = Color::rgb(
+                (r * 255.0).round() as u8,
+                (g * 255.0).round() as u8,
+                (b * 255.0).round() as u8,
+            )
+            .to_srgb_float()
+            .unwrap();
+
+            // sRGB -> Lab -> sRGB
+            let (l, a, b_) = srgb_to_lab(srgb.r, srgb.g, srgb.b);
+            let (r2, g2, b2) = lab_to_srgb(l, a, b_);
+            assert!(
+                (r2 - r).abs() < 1e-2 && (g2 - g).abs() < 1e-2 && (b2 - b).abs() < 1e-2,
+                "lab roundtrip failed for ({r}, {g}, {b}) -> ({r2}, {g2}, {b2})"
+            );
+
+            // sRGB -> Lch -> sRGB
+            let (l, c, h) = lab_to_lch(l, a, b_);
+            let (l3, a3, b3) = lch_to_lab(l, c, h);
+            let (r3, g3, b3) = lab_to_srgb(l3, a3, b3);
+            assert!(
+                (r3 - r).abs() < 1e-2 && (g3 - g).abs() < 1e-2 && (b3 - b).abs() < 1e-2,
+                "lch roundtrip failed for ({r}, {g}, {b}) -> ({r3}, {g3}, {b3})"
+            );
+        }
+    }
+
+    #[test]
+    fn color_mix_in_lab_and_lch() {
+        let cases: [(&str, u8, u8, u8); 4] = [
+            // Red + blue 50% in Lab produces a purple-ish mix.
+            (
+                "color-mix(in lab, rgb(255, 0, 0), rgb(0, 0, 255))",
+                193,
+                0,
+                136,
+            ),
+            // Red + green 50% in Lab.
+            (
+                "color-mix(in lab, rgb(255, 0, 0), rgb(0, 255, 0))",
+                200,
+                172,
+                0,
+            ),
+            // Red + blue 50% in Lch (shorter hue by default).
+            (
+                "color-mix(in lch, rgb(255, 0, 0), rgb(0, 0, 255))",
+                245,
+                0,
+                134,
+            ),
+            // Lch with explicit hue method.
+            (
+                "color-mix(in lch shorter hue, rgb(255, 0, 0), rgb(0, 0, 255))",
+                245,
+                0,
+                134,
+            ),
+        ];
+        for (input, er, eg, eb) in cases {
+            let c = Color::parse(input).unwrap();
+            let rgb = c.into_rgb().unwrap();
+            let (r, g, b, _alpha) = as_rgb(&rgb.kind).expect("expected Rgb");
+            assert!(
+                (r as i16 - er as i16).abs() <= 2
+                    && (g as i16 - eg as i16).abs() <= 2
+                    && (b as i16 - eb as i16).abs() <= 2,
+                "{input} -> rgb({r}, {g}, {b}) expected ({er}, {eg}, {eb})"
+            );
+        }
     }
 }

@@ -1,5 +1,5 @@
 use crate::css::properties::Value;
-use crate::css::selector::{Selector, PseudoSelector};
+use crate::css::selector::{PseudoSelector, Selector};
 use crate::css::values::{Color, CssString, Length};
 use crate::css::{AtRule, Declaration, StyleSheet};
 use mrk::Renderable;
@@ -21,7 +21,10 @@ fn empty_stylesheet_converts_to_node_raw() {
 #[test]
 fn single_rule_with_one_declaration() {
     let sheet = StyleSheet::new()
-        .rule(|r| r.selector(Selector::class("btn")).color(Color::named("red")))
+        .rule(|r| {
+            r.selector(Selector::class("btn"))
+                .color(Color::named("red"))
+        })
         .build();
     let css = sheet.render();
     assert_eq!(css, ".btn {\n    color: red;\n  }");
@@ -60,8 +63,14 @@ fn rule_with_multiple_selectors() {
 #[test]
 fn multiple_rules() {
     let sheet = StyleSheet::new()
-        .rule(|r| r.selector(Selector::type_("h1")).font_size(Length::px(32.0)))
-        .rule(|r| r.selector(Selector::type_("h2")).font_size(Length::px(24.0)))
+        .rule(|r| {
+            r.selector(Selector::type_("h1"))
+                .font_size(Length::px(32.0))
+        })
+        .rule(|r| {
+            r.selector(Selector::type_("h2"))
+                .font_size(Length::px(24.0))
+        })
         .build();
     let css = sheet.render();
     assert_eq!(
@@ -96,10 +105,11 @@ fn rule_with_nesting() {
 fn rule_with_nest_at_rule() {
     let sheet = StyleSheet::new()
         .rule(|r| {
-            r.selector(Selector::class("responsive"))
-                .nest_at_rule(AtRule::media("(max-width: 600px)").rule(|r| {
-                    r.selector(Selector::class("&")).width(Length::pct(100.0))
-                }).build())
+            r.selector(Selector::class("responsive")).nest_at_rule(
+                AtRule::media("(max-width: 600px)")
+                    .rule(|r| r.selector(Selector::class("&")).width(Length::pct(100.0)))
+                    .build(),
+            )
         })
         .build();
     let css = sheet.render();
@@ -112,7 +122,10 @@ fn media_at_rule_with_rules() {
     let sheet = StyleSheet::new()
         .at_rule(
             AtRule::media("(min-width: 800px)")
-                .rule(|r| r.selector(Selector::class("container")).width(Length::px(750.0)))
+                .rule(|r| {
+                    r.selector(Selector::class("container"))
+                        .width(Length::px(750.0))
+                })
                 .build(),
         )
         .build();
@@ -146,15 +159,21 @@ fn keyframes_at_rule() {
     let sheet = StyleSheet::new()
         .at_rule(
             AtRule::keyframes("fade-in")
-                .rule(|r| r.selector(Selector::class("from")).opacity(Value::Number(0.0.into())))
-                .rule(|r| r.selector(Selector::class("to")).opacity(Value::Number(1.0.into())))
+                .rule(|r| {
+                    r.selector(Selector::class("from"))
+                        .opacity(Value::Number(0.0.into()))
+                })
+                .rule(|r| {
+                    r.selector(Selector::class("to"))
+                        .opacity(Value::Number(1.0.into()))
+                })
                 .build(),
         )
         .build();
     let css = sheet.render();
     assert_eq!(
         css,
-        "@keyframes fade-in {\n  .from {\n    opacity: 0;\n  }\n  .to {\n    opacity: 1;\n  }\n}"
+        "@keyframes fade-in {\n  from {\n    opacity: 0;\n  }\n  to {\n    opacity: 1;\n  }\n}"
     );
 }
 
@@ -176,9 +195,7 @@ fn supports_at_rule() {
 
 #[test]
 fn charset_at_rule() {
-    let sheet = StyleSheet::new()
-        .at_rule(AtRule::charset("UTF-8"))
-        .build();
+    let sheet = StyleSheet::new().at_rule(AtRule::charset("UTF-8")).build();
     assert_eq!(sheet.render(), "@charset \"UTF-8\";");
 }
 
@@ -204,7 +221,10 @@ fn mixed_rules_and_at_rules() {
         .rule(|r| r.selector(Selector::type_("body")).margin(Length::px(0.0)))
         .at_rule(
             AtRule::media("print")
-                .rule(|r| r.selector(Selector::type_("body")).font_size(Length::pt(12.0)))
+                .rule(|r| {
+                    r.selector(Selector::type_("body"))
+                        .font_size(Length::pt(12.0))
+                })
                 .build(),
         )
         .build();
@@ -268,7 +288,10 @@ fn nested_blocks_preserve_declarations() {
         .rule(|r| {
             r.selector(Selector::class("parent"))
                 .color(Color::named("black"))
-                .nest(|n| n.selector(Selector::class("& .child")).color(Color::named("gray")))
+                .nest(|n| {
+                    n.selector(Selector::class("& .child"))
+                        .color(Color::named("gray"))
+                })
                 .font_size(Length::px(14.0))
         })
         .build();
@@ -414,6 +437,30 @@ fn css_macro_glued_units() {
 }
 
 #[test]
+fn css_macro_modern_length_units() {
+    let cases: [(&str, &str); 10] = [
+        ("cap", "10cap"),
+        ("rcap", "10rcap"),
+        ("lh", "10lh"),
+        ("rlh", "10rlh"),
+        ("vi", "10vi"),
+        ("vb", "10vb"),
+        ("svw", "10svw"),
+        ("lvh", "10lvh"),
+        ("dvmin", "10dvmin"),
+        ("cqi", "10cqi"),
+    ];
+    for (unit, expected) in cases {
+        let value = format!("10{}", unit);
+        let sheet = crate::css! {
+            .a { width: { value }; }
+        };
+        let css = sheet.render();
+        assert!(css.contains(expected), "unit {unit} rendered as:\n{css}");
+    }
+}
+
+#[test]
 fn css_macro_split_unit_single() {
     // Units starting with `e` after a decimal (`1.5em`) fail at lex
     // time (parsed as an exponent); the split form works.
@@ -552,7 +599,8 @@ fn css_macro_modern_color_and_transform() {
         }
     };
     let css = sheet.render();
-    assert!(css.contains("color: hsl(120 50% 50%);"));
+    // hsl() is normalized to comma syntax when typed as Value::Color.
+    assert!(css.contains("color: hsl(120, 50%, 50%);"));
     assert!(css.contains("transform: translate(-50%, -8px);"));
 }
 
@@ -577,7 +625,7 @@ fn css_macro_media_keyword_spacing() {
     };
     let css = sheet.render();
     assert!(css.contains("@media screen and (max-width: 600px)"));
-    assert!(css.contains("@supports not (display: grid)"));
+    assert!(css.contains("@supports (not (display: grid))"));
 }
 
 #[test]

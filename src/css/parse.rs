@@ -55,13 +55,13 @@
 
 use std::borrow::Cow;
 
+use crate::css::StyleSheet;
 use crate::css::at_rules::{AtRule, Keyframe, PageMarginBox, RuleOrAtRule};
 use crate::css::declaration::Declaration;
 use crate::css::properties::{Value, parse_decl_value, split_important};
 use crate::css::rule::{NestedBlock, Rule};
 use crate::css::selector::{AttrCase, AttrOp, PseudoSelector, Selector, SelectorArg};
 use crate::css::values::{CssString, CustomProperty};
-use crate::css::StyleSheet;
 
 /// Parse a whole stylesheet from a string into a [`StyleSheet`].
 ///
@@ -137,11 +137,7 @@ fn strip_comments(input: &str) -> String {
 /// `calc(100% - 8px)` survives as valid CSS while `margin: - 1`
 /// still becomes `margin: -1`.
 fn preprocess(input: &str) -> String {
-    const PATTERNS: [(&str, &str); 3] = [
-        (". ", "."),
-        ("# ", "#"),
-        ("! ", "!"),
-    ];
+    const PATTERNS: [(&str, &str); 3] = [(". ", "."), ("# ", "#"), ("! ", "!")];
     let mut out = String::with_capacity(input.len());
     let mut quote: Option<char> = None;
     let mut chars = input.chars().peekable();
@@ -366,7 +362,9 @@ fn parse_declarations_only(body: &str, ctx: &str) -> Vec<Declaration> {
 pub fn parse_declaration(stmt: &str) -> Declaration {
     let stmt = &preprocess(stmt);
     if stmt.starts_with('@') {
-        panic!("css!: statement at-rules (@import, @charset, …) are only allowed at the top level, got `{stmt};`");
+        panic!(
+            "css!: statement at-rules (@import, @charset, …) are only allowed at the top level, got `{stmt};`"
+        );
     }
     let (name, value) = stmt
         .split_once(':')
@@ -393,8 +391,7 @@ fn normalize_important(value: &str) -> Cow<'_, str> {
         return Cow::Borrowed(value);
     };
     let after = idx + "!important".len();
-    let boundary = after == value.len()
-        || value.as_bytes()[after].is_ascii_whitespace();
+    let boundary = after == value.len() || value.as_bytes()[after].is_ascii_whitespace();
     if idx == 0 || !boundary || value.as_bytes()[idx - 1].is_ascii_whitespace() {
         return Cow::Borrowed(value);
     }
@@ -431,19 +428,32 @@ fn parse_at_block(prelude: &str, body: &str) -> AtRule {
     let (keyword, rest) = at_keyword(prelude);
     match keyword {
         "media" => AtRule::Media {
-            query: Cow::Owned(normalize_condition_keywords(&required_prelude(rest, prelude))),
+            query: Cow::Owned(normalize_condition_keywords(&required_prelude(
+                rest, prelude,
+            ))),
             rules: parse_sheet_items(body),
         },
         "supports" => AtRule::Supports {
-            condition: Cow::Owned(normalize_condition_keywords(&required_prelude(rest, prelude))),
+            condition: Cow::Owned(normalize_condition_keywords(&required_prelude(
+                rest, prelude,
+            ))),
             rules: parse_sheet_items(body),
         },
         "container" => parse_container(rest, body, prelude),
         "scope" => parse_scope(rest, body),
-        "layer" => AtRule::Layer {
-            name: optional_name(rest),
-            rules: parse_sheet_items(body),
-        },
+        "layer" => {
+            let name = optional_name(rest).map(|n| {
+                let n = n.trim();
+                if !is_single_layer_name(n) {
+                    panic!("css!: @layer block must have a single layer name, got `@{n}`");
+                }
+                Cow::Owned(n.to_string())
+            });
+            AtRule::Layer {
+                name,
+                rules: parse_sheet_items(body),
+            }
+        }
         "keyframes" => parse_keyframes(rest, body, prelude),
         "font-face" => AtRule::FontFace {
             declarations: parse_declarations_only(body, "@font-face"),
@@ -524,8 +534,7 @@ fn normalize_condition_keywords(prelude: &str) -> String {
         }
         let word = &prelude[start..end];
         out.push_str(word);
-        let prev_ok =
-            start == 0 || matches!(bytes[start - 1], b' ' | b'\t' | b'\n' | b'\r' | b')');
+        let prev_ok = start == 0 || matches!(bytes[start - 1], b' ' | b'\t' | b'\n' | b'\r' | b')');
         if prev_ok && chars.peek().map(|&(_, c2)| c2) == Some('(') && KEYWORDS.contains(&word) {
             out.push(' ');
         }
@@ -540,6 +549,15 @@ fn optional_name(rest: &str) -> Option<Cow<'static, str>> {
     } else {
         Some(Cow::Owned(rest.to_string()))
     }
+}
+
+/// True if `s` is a single valid CSS layer name: non-empty, no
+/// whitespace or commas, and identifier characters only.
+fn is_single_layer_name(s: &str) -> bool {
+    !s.is_empty()
+        && !s.contains(|c: char| c.is_whitespace() || c == ',')
+        && s.chars()
+            .all(|c| c.is_ascii_alphanumeric() || c == '-' || c == '_')
 }
 
 /// `@container [name] (condition) { … }`.
@@ -645,7 +663,9 @@ fn parse_keyframes(name: &str, body: &str, prelude: &str) -> AtRule {
                 });
             }
             Chunk::Statement(stmt) => {
-                panic!("css!: @keyframes stops look like `from {{ … }}` or `50% {{ … }}`, got `{stmt};`")
+                panic!(
+                    "css!: @keyframes stops look like `from {{ … }}` or `50% {{ … }}`, got `{stmt};`"
+                )
             }
         }
     }
@@ -853,9 +873,7 @@ fn parse_complex_selector(text: &str) -> Selector {
             (Some(a), Comb::Descendant) => Selector::Descendant(Box::new(a), Box::new(seg)),
             (Some(a), Comb::Child) => Selector::Child(Box::new(a), Box::new(seg)),
             (Some(a), Comb::Sibling) => Selector::Sibling(Box::new(a), Box::new(seg)),
-            (Some(a), Comb::GeneralSibling) => {
-                Selector::GeneralSibling(Box::new(a), Box::new(seg))
-            }
+            (Some(a), Comb::GeneralSibling) => Selector::GeneralSibling(Box::new(a), Box::new(seg)),
         });
     }
     chain.unwrap_or_else(|| panic!("css!: empty selector in `{text}`"))
@@ -1001,11 +1019,23 @@ fn take_paren_args(chars: &mut std::iter::Peekable<std::str::Chars>, seg: &str) 
 /// Parse an attribute selector after the opening `[` has been
 /// consumed. Reads up to the closing `]` (quote-aware) and builds
 /// either a bare or a comparison [`Selector::Attribute`].
-fn parse_attribute_selector(chars: &mut std::iter::Peekable<std::str::Chars>, seg: &str) -> Selector {
+fn parse_attribute_selector(
+    chars: &mut std::iter::Peekable<std::str::Chars>,
+    seg: &str,
+) -> Selector {
     let mut inner = String::new();
     let mut quote: Option<char> = None;
+    let mut escaped = false;
     for c in chars.by_ref() {
         match (quote, c) {
+            _ if escaped => {
+                inner.push(c);
+                escaped = false;
+            }
+            (_, '\\') => {
+                inner.push(c);
+                escaped = true;
+            }
             (Some(q), _) if c == q => {
                 quote = None;
                 inner.push(c);
@@ -1076,9 +1106,14 @@ fn take_attribute_value<'a>(rest: &'a str, seg: &str) -> (String, &'a str) {
     let mut chars = rest.char_indices();
     match chars.next() {
         Some((_, q @ ('"' | '\''))) => {
+            let mut prev_escape = false;
             for (i, c) in chars.by_ref() {
-                if c == q {
+                if c == '\\' {
+                    prev_escape = !prev_escape;
+                } else if c == q && !prev_escape {
                     return (rest[1..i].to_string(), &rest[i + 1..]);
+                } else {
+                    prev_escape = false;
                 }
             }
             panic!("css!: unterminated string in attribute selector `{seg}`");
@@ -1138,8 +1173,14 @@ mod tests {
 
     #[test]
     fn preprocess_keeps_binary_minus_space() {
-        assert_eq!(preprocess("width: calc(100% - 8px)"), "width: calc(100% - 8px)");
-        assert_eq!(preprocess("width: calc(1px - - 2px)"), "width: calc(1px - -2px)");
+        assert_eq!(
+            preprocess("width: calc(100% - 8px)"),
+            "width: calc(100% - 8px)"
+        );
+        assert_eq!(
+            preprocess("width: calc(1px - - 2px)"),
+            "width: calc(1px - -2px)"
+        );
     }
 
     #[test]
@@ -1425,6 +1466,19 @@ mod tests {
     }
 
     #[test]
+    fn selector_attribute_escaped_quote() {
+        let cases: [(&str, &str); 2] = [
+            ("[title=\"a\\\"b\"] { color: red; }", "[title=\"a\\\"b\"]"),
+            ("[data-x=\"a\\\\b\"] { color: red; }", "[data-x=\"a\\\\b\"]"),
+        ];
+        for (input, expected) in cases {
+            let sheet = parse_stylesheet(input);
+            let css = sheet.render();
+            assert!(css.contains(expected), "{input}\nrendered as:\n{css}");
+        }
+    }
+
+    #[test]
     #[should_panic(expected = "expected an identifier")]
     fn selector_dot_without_ident_panics() {
         parse_stylesheet(".:hover { color: red; }");
@@ -1448,8 +1502,10 @@ mod tests {
 
     #[test]
     fn decl_modern_hsl_space_syntax() {
+        // Modern space-separated hsl() is typed as Value::Color and
+        // rendered with legacy comma syntax.
         let css = render(".a { color: hsl(120 50% 50%); }");
-        assert!(css.contains("color: hsl(120 50% 50%)"));
+        assert!(css.contains("color: hsl(120, 50%, 50%)"));
     }
 
     #[test]
@@ -1465,7 +1521,9 @@ mod tests {
 
     #[test]
     fn declaration_important() {
-        assert!(render(".a { color: red !important; }").contains("color: rgb(255, 0, 0) !important;"));
+        assert!(
+            render(".a { color: red !important; }").contains("color: rgb(255, 0, 0) !important;")
+        );
     }
 
     #[test]
@@ -1480,7 +1538,9 @@ mod tests {
 
     #[test]
     fn declaration_custom_property() {
-        assert!(render(":root { --brand: rebeccapurple; }").contains("--brand: rgb(102, 51, 153);"));
+        assert!(
+            render(":root { --brand: rebeccapurple; }").contains("--brand: rgb(102, 51, 153);")
+        );
     }
 
     #[test]
@@ -1548,7 +1608,7 @@ mod tests {
     #[test]
     fn at_supports_keyword_glued_paren() {
         let css = render("@supports not(display: grid) { .a { color: red; } }");
-        assert!(css.contains("@supports not (display: grid)"));
+        assert!(css.contains("@supports (not (display: grid))"));
         let css = render("@supports (display: grid) or(display: flex) { .a { color: red; } }");
         assert!(css.contains("@supports (display: grid) or (display: flex)"));
     }
@@ -1566,7 +1626,10 @@ mod tests {
         // A keyword not preceded by whitespace or `)` is left alone.
         assert_eq!(normalize_condition_keywords("(and(a)"), "(and(a)");
         // Non-keyword words and non-ASCII bytes pass through.
-        assert_eq!(normalize_condition_keywords("scréen and(x)"), "scréen and (x)");
+        assert_eq!(
+            normalize_condition_keywords("scréen and(x)"),
+            "scréen and (x)"
+        );
     }
 
     #[test]
@@ -1640,6 +1703,37 @@ mod tests {
     }
 
     #[test]
+    fn at_layer_block_rejects_multiple_names() {
+        // Block @layer must declare exactly one layer name.
+        let cases: [&str; 3] = [
+            "@layer base, extra { .a { color: red; } }",
+            "@layer base extra { .a { color: red; } }",
+            "@layer base.theme { .a { color: red; } }",
+        ];
+        for input in cases {
+            let result = std::panic::catch_unwind(|| render(input));
+            assert!(
+                result.is_err(),
+                "expected panic for multi-name @layer block: {input}"
+            );
+        }
+    }
+
+    #[test]
+    fn at_layer_block_accepts_single_name() {
+        let cases: [&str; 4] = [
+            "@layer base { .a { color: red; } }",
+            "@layer _base { .a { color: red; } }",
+            "@layer layer-1 { .a { color: red; } }",
+            "@layer { .a { color: red; } }",
+        ];
+        for input in cases {
+            let css = render(input);
+            assert!(css.contains("@layer"), "{input}");
+        }
+    }
+
+    #[test]
     fn at_keyframes_from_to() {
         let css = render("@keyframes fade { from { opacity: 0; } to { opacity: 1; } }");
         assert!(css.contains("@keyframes fade"));
@@ -1703,9 +1797,7 @@ mod tests {
 
     #[test]
     fn at_page_with_margin_box_and_decls() {
-        let css = render(
-            "@page :first { margin: 1in; @top-left { content: \"H\"; } }",
-        );
+        let css = render("@page :first { margin: 1in; @top-left { content: \"H\"; } }");
         assert!(css.contains("@page :first"));
         assert!(css.contains("margin: 1in"));
         assert!(css.contains("@top-left"));
@@ -1773,7 +1865,8 @@ mod tests {
     fn at_import_with_supports_and_media() {
         let css = render("@import \"foo.css\" supports(display: flex) screen;");
         assert!(css.contains("supports(display: flex) screen;"));
-        let css = render("@import \"foo.css\" supports(display: flex) screen and(min-width: 600px);");
+        let css =
+            render("@import \"foo.css\" supports(display: flex) screen and(min-width: 600px);");
         assert!(css.contains("screen and (min-width: 600px);"));
     }
 
@@ -1899,12 +1992,18 @@ mod tests {
 
     #[test]
     fn normalize_important_glued() {
-        assert_eq!(normalize_important("red!important"), Cow::<str>::Owned("red !important".to_string()));
+        assert_eq!(
+            normalize_important("red!important"),
+            Cow::<str>::Owned("red !important".to_string())
+        );
     }
 
     #[test]
     fn normalize_important_passthrough() {
-        assert_eq!(normalize_important("red !important"), Cow::<str>::Borrowed("red !important"));
+        assert_eq!(
+            normalize_important("red !important"),
+            Cow::<str>::Borrowed("red !important")
+        );
         assert_eq!(normalize_important("red"), Cow::<str>::Borrowed("red"));
         // Not at a word boundary — no normalization.
         assert_eq!(

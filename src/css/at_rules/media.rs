@@ -11,7 +11,9 @@ pub fn render(f: &mut fmt::Formatter<'_>, query: &str, rules: &[RuleOrAtRule]) -
     for r in rules {
         s.push_str(&format!("\n  {}", r));
     }
-    if !rules.is_empty() { s.push('\n'); }
+    if !rules.is_empty() {
+        s.push('\n');
+    }
     s.push('}');
     f.write_str(&s)
 }

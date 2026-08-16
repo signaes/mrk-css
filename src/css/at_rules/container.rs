@@ -12,12 +12,16 @@ pub fn render(
     rules: &[RuleOrAtRule],
 ) -> fmt::Result {
     let mut s = String::from("@container");
-    if let Some(n) = name { s.push_str(&format!(" {}", n)); }
+    if let Some(n) = name {
+        s.push_str(&format!(" {}", n));
+    }
     s.push_str(&format!(" ({}) {{", query));
     for r in rules {
         s.push_str(&format!("\n  {}", r));
     }
-    if !rules.is_empty() { s.push('\n'); }
+    if !rules.is_empty() {
+        s.push('\n');
+    }
     s.push('}');
     f.write_str(&s)
 }
@@ -81,13 +85,24 @@ mod tests {
         let mut w = W(String::new());
         let result = std::fmt::write(
             &mut w,
-            format_args!("{}", ContainerDisplay(&Cow::Borrowed("sidebar"), &Cow::Borrowed("min-width: 800px"), &[])),
+            format_args!(
+                "{}",
+                ContainerDisplay(
+                    &Cow::Borrowed("sidebar"),
+                    &Cow::Borrowed("min-width: 800px"),
+                    &[]
+                )
+            ),
         );
         result.unwrap();
         assert_eq!(w.0, "@container sidebar (min-width: 800px) {}");
     }
 
-    struct ContainerDisplay<'a>(&'a Cow<'static, str>, &'a Cow<'static, str>, &'a [RuleOrAtRule]);
+    struct ContainerDisplay<'a>(
+        &'a Cow<'static, str>,
+        &'a Cow<'static, str>,
+        &'a [RuleOrAtRule],
+    );
     impl<'a> fmt::Display for ContainerDisplay<'a> {
         fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
             let name = Some(self.0.as_ref());

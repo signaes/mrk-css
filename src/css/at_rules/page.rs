@@ -14,7 +14,9 @@ pub fn render(
     margin_boxes: &[PageMarginBox],
 ) -> fmt::Result {
     let mut s = String::from("@page");
-    if let Some(p) = pseudo { s.push_str(&format!(" {}", p)); }
+    if let Some(p) = pseudo {
+        s.push_str(&format!(" {}", p));
+    }
     s.push_str(" {");
     for d in declarations {
         s.push_str(&format!("\n  {}", d));
@@ -31,7 +33,9 @@ pub fn render(
             s.push_str("  }");
         }
     }
-    if !declarations.is_empty() || !margin_boxes.is_empty() { s.push('\n'); }
+    if !declarations.is_empty() || !margin_boxes.is_empty() {
+        s.push('\n');
+    }
     s.push('}');
     f.write_str(&s)
 }
@@ -87,11 +91,19 @@ mod tests {
             }
         }
         let mut w = W(String::new());
-        std::fmt::write(&mut w, format_args!("{}", PageDisplay(Some(":first"), &[], &[]))).unwrap();
+        std::fmt::write(
+            &mut w,
+            format_args!("{}", PageDisplay(Some(":first"), &[], &[])),
+        )
+        .unwrap();
         assert_eq!(w.0, "@page :first {}");
     }
 
-    struct PageDisplay<'a>(Option<&'a str>, &'a [Declaration], &'a [crate::css::at_rules::PageMarginBox]);
+    struct PageDisplay<'a>(
+        Option<&'a str>,
+        &'a [Declaration],
+        &'a [crate::css::at_rules::PageMarginBox],
+    );
     impl<'a> fmt::Display for PageDisplay<'a> {
         fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
             render(f, self.0, self.1, self.2)

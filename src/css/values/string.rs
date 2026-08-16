@@ -106,7 +106,10 @@ mod tests {
 
     #[test]
     fn display_escapes_quote() {
-        assert_eq!(CssString::new("she said \"hi\"").to_string(), "\"she said \\\"hi\\\"\"");
+        assert_eq!(
+            CssString::new("she said \"hi\"").to_string(),
+            "\"she said \\\"hi\\\"\""
+        );
     }
 
     #[test]

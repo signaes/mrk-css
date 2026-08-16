@@ -47,14 +47,18 @@ impl std::fmt::Display for Rule {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let mut s = String::new();
         for (i, sel) in self.selectors.iter().enumerate() {
-            if i > 0 { s.push_str(", "); }
+            if i > 0 {
+                s.push_str(", ");
+            }
             s.push_str(&sel.to_string());
         }
         s.push_str(" {");
         for d in &self.declarations {
             s.push_str(&format!("\n    {}", d));
         }
-        if !self.declarations.is_empty() { s.push_str("\n  "); }
+        if !self.declarations.is_empty() {
+            s.push_str("\n  ");
+        }
         if !self.nested.is_empty() {
             for n in &self.nested {
                 match n {
@@ -149,6 +153,15 @@ impl RuleBuilder {
     define_property!(RuleBuilder, "color" => color, "Set the foreground color.");
     define_property!(RuleBuilder, "background-color" => background_color, "Set the background color.");
     define_property!(RuleBuilder, "background" => background, "Set the background shorthand.", shorthand);
+    define_property!(RuleBuilder, "background-image" => background_image, "Set the background image.");
+    define_property!(RuleBuilder, "background-position" => background_position, "Set the background position.");
+    define_property!(RuleBuilder, "background-size" => background_size, "Set the background size.");
+    define_property!(RuleBuilder, "background-repeat" => background_repeat, "Set the background repeat mode.");
+    define_property!(RuleBuilder, "background-attachment" => background_attachment, "Set the background attachment.");
+    define_property!(RuleBuilder, "background-origin" => background_origin, "Set the background origin.");
+    define_property!(RuleBuilder, "background-clip" => background_clip, "Set the background clip.");
+    define_property!(RuleBuilder, "object-fit" => object_fit, "Set the object fit mode.");
+    define_property!(RuleBuilder, "object-position" => object_position, "Set the object position.");
     define_property!(RuleBuilder, "opacity" => opacity, "Set the opacity.");
     define_property!(RuleBuilder, "fill" => fill, "Set the fill color (SVG).");
     define_property!(RuleBuilder, "stroke" => stroke, "Set the stroke color (SVG).");
@@ -161,15 +174,36 @@ impl RuleBuilder {
     define_property!(RuleBuilder, "font-weight" => font_weight, "Set the font weight.");
     define_property!(RuleBuilder, "font-family" => font_family, "Set the font family.");
     define_property!(RuleBuilder, "font-style" => font_style, "Set the font style.");
+    define_property!(RuleBuilder, "font-variant" => font_variant, "Set the font variant.");
+    define_property!(RuleBuilder, "font-feature-settings" => font_feature_settings, "Set the font feature settings.");
+    define_property!(RuleBuilder, "font-variant-numeric" => font_variant_numeric, "Set the font variant numeric.");
+    define_property!(RuleBuilder, "font-variant-ligatures" => font_variant_ligatures, "Set the font variant ligatures.");
+    define_property!(RuleBuilder, "font-variant-caps" => font_variant_caps, "Set the font variant caps.");
+    define_property!(RuleBuilder, "font-variant-east-asian" => font_variant_east_asian, "Set the font variant east asian.");
+    define_property!(RuleBuilder, "font-kerning" => font_kerning, "Set the font kerning.");
+    define_property!(RuleBuilder, "font-size-adjust" => font_size_adjust, "Set the font size adjust.");
+    define_property!(RuleBuilder, "font-optical-sizing" => font_optical_sizing, "Set the font optical sizing.");
+    define_property!(RuleBuilder, "font-stretch" => font_stretch, "Set the font stretch.");
     define_property!(RuleBuilder, "font" => font, "Set the font shorthand.", shorthand);
 
     // ── Text ─────────────────────────────────────────────────────
     define_property!(RuleBuilder, "text-align" => text_align, "Set the text alignment.");
+    define_property!(RuleBuilder, "text-indent" => text_indent, "Set the text indent.");
     define_property!(RuleBuilder, "text-decoration" => text_decoration, "Set the text decoration.");
+    define_property!(RuleBuilder, "text-decoration-line" => text_decoration_line, "Set the text decoration line.");
+    define_property!(RuleBuilder, "text-decoration-style" => text_decoration_style, "Set the text decoration style.");
+    define_property!(RuleBuilder, "text-decoration-thickness" => text_decoration_thickness, "Set the text decoration thickness.");
+    define_property!(RuleBuilder, "text-underline-offset" => text_underline_offset, "Set the text underline offset.");
+    define_property!(RuleBuilder, "text-shadow" => text_shadow, "Set the text shadow.");
     define_property!(RuleBuilder, "line-height" => line_height, "Set the line height.");
     define_property!(RuleBuilder, "letter-spacing" => letter_spacing, "Set the letter spacing.");
+    define_property!(RuleBuilder, "word-spacing" => word_spacing, "Set the word spacing.");
     define_property!(RuleBuilder, "text-transform" => text_transform, "Set the text transform.");
     define_property!(RuleBuilder, "white-space" => white_space, "Set the white-space mode.");
+    define_property!(RuleBuilder, "word-break" => word_break, "Set the word breaking mode.");
+    define_property!(RuleBuilder, "overflow-wrap" => overflow_wrap, "Set the overflow-wrap mode.");
+    define_property!(RuleBuilder, "hyphens" => hyphens, "Set the hyphenation mode.");
+    define_property!(RuleBuilder, "vertical-align" => vertical_align, "Set the vertical alignment.");
 
     // ── Box Model ────────────────────────────────────────────────
     define_property!(RuleBuilder, "margin" => margin, "Set the margin shorthand.", shorthand);
@@ -213,8 +247,15 @@ impl RuleBuilder {
     define_property!(RuleBuilder, "flex-shrink" => flex_shrink, "Set the flex shrink factor.");
     define_property!(RuleBuilder, "flex-basis" => flex_basis, "Set the flex basis.");
     define_property!(RuleBuilder, "justify-content" => justify_content, "Set the justify-content mode.");
+    define_property!(RuleBuilder, "justify-items" => justify_items, "Set the justify-items mode.");
+    define_property!(RuleBuilder, "justify-self" => justify_self, "Set the justify-self mode.");
     define_property!(RuleBuilder, "align-items" => align_items, "Set the align-items mode.");
+    define_property!(RuleBuilder, "align-content" => align_content, "Set the align-content mode.");
     define_property!(RuleBuilder, "align-self" => align_self, "Set the align-self mode.");
+    define_property!(RuleBuilder, "place-content" => place_content, "Set the place-content shorthand.", shorthand);
+    define_property!(RuleBuilder, "place-items" => place_items, "Set the place-items shorthand.", shorthand);
+    define_property!(RuleBuilder, "place-self" => place_self, "Set the place-self shorthand.", shorthand);
+    define_property!(RuleBuilder, "order" => order, "Set the flex item order.");
     define_property!(RuleBuilder, "gap" => gap, "Set the gap size.");
     define_property!(RuleBuilder, "row-gap" => row_gap, "Set the row gap size.");
     define_property!(RuleBuilder, "column-gap" => column_gap, "Set the column gap size.");
@@ -223,6 +264,9 @@ impl RuleBuilder {
     define_property!(RuleBuilder, "grid-template-rows" => grid_template_rows, "Set the grid template rows.");
     define_property!(RuleBuilder, "grid-column" => grid_column, "Set the grid column.");
     define_property!(RuleBuilder, "grid-row" => grid_row, "Set the grid row.");
+    define_property!(RuleBuilder, "grid-auto-flow" => grid_auto_flow, "Set the grid auto flow.");
+    define_property!(RuleBuilder, "grid-auto-columns" => grid_auto_columns, "Set the grid auto columns.");
+    define_property!(RuleBuilder, "grid-auto-rows" => grid_auto_rows, "Set the grid auto rows.");
 
     // ── Positioning ──────────────────────────────────────────────
     define_property!(RuleBuilder, "position" => position, "Set the position mode.");
@@ -232,6 +276,18 @@ impl RuleBuilder {
     define_property!(RuleBuilder, "left" => left, "Set the left offset.");
     define_property!(RuleBuilder, "z-index" => z_index, "Set the z-index.");
     define_property!(RuleBuilder, "inset" => inset, "Set the inset shorthand.", shorthand);
+
+    // ── Layout & Containment ─────────────────────────────────────
+    define_property!(RuleBuilder, "float" => float, "Set the float direction.");
+    define_property!(RuleBuilder, "clear" => clear, "Set the clear behavior.");
+    define_property!(RuleBuilder, "contain" => contain, "Set the containment mode.");
+    define_property!(RuleBuilder, "content-visibility" => content_visibility, "Set the content visibility.");
+    define_property!(RuleBuilder, "will-change" => will_change, "Set the will-change hint.");
+    define_property!(RuleBuilder, "isolation" => isolation, "Set the isolation mode.");
+    define_property!(RuleBuilder, "mix-blend-mode" => mix_blend_mode, "Set the blend mode.");
+    define_property!(RuleBuilder, "image-rendering" => image_rendering, "Set the image rendering mode.");
+    define_property!(RuleBuilder, "container-type" => container_type, "Set the container query type.");
+    define_property!(RuleBuilder, "container-name" => container_name, "Set the container query name.");
 
     // ── Animation & Transition ───────────────────────────────────
     define_property!(RuleBuilder, "animation" => animation, "Set the animation shorthand.", shorthand);
@@ -373,6 +429,15 @@ impl NestedBuilder {
     define_property!(NestedBuilder, "color" => color, "Set the foreground color.");
     define_property!(NestedBuilder, "background-color" => background_color, "Set the background color.");
     define_property!(NestedBuilder, "background" => background, "Set the background shorthand.", shorthand);
+    define_property!(NestedBuilder, "background-image" => background_image, "Set the background image.");
+    define_property!(NestedBuilder, "background-position" => background_position, "Set the background position.");
+    define_property!(NestedBuilder, "background-size" => background_size, "Set the background size.");
+    define_property!(NestedBuilder, "background-repeat" => background_repeat, "Set the background repeat mode.");
+    define_property!(NestedBuilder, "background-attachment" => background_attachment, "Set the background attachment.");
+    define_property!(NestedBuilder, "background-origin" => background_origin, "Set the background origin.");
+    define_property!(NestedBuilder, "background-clip" => background_clip, "Set the background clip.");
+    define_property!(NestedBuilder, "object-fit" => object_fit, "Set the object fit mode.");
+    define_property!(NestedBuilder, "object-position" => object_position, "Set the object position.");
     define_property!(NestedBuilder, "opacity" => opacity, "Set the opacity.");
     define_property!(NestedBuilder, "fill" => fill, "Set the fill color (SVG).");
     define_property!(NestedBuilder, "stroke" => stroke, "Set the stroke color (SVG).");
@@ -383,12 +448,33 @@ impl NestedBuilder {
     define_property!(NestedBuilder, "font-weight" => font_weight, "Set the font weight.");
     define_property!(NestedBuilder, "font-family" => font_family, "Set the font family.");
     define_property!(NestedBuilder, "font-style" => font_style, "Set the font style.");
+    define_property!(NestedBuilder, "font-variant" => font_variant, "Set the font variant.");
+    define_property!(NestedBuilder, "font-feature-settings" => font_feature_settings, "Set the font feature settings.");
+    define_property!(NestedBuilder, "font-variant-numeric" => font_variant_numeric, "Set the font variant numeric.");
+    define_property!(NestedBuilder, "font-variant-ligatures" => font_variant_ligatures, "Set the font variant ligatures.");
+    define_property!(NestedBuilder, "font-variant-caps" => font_variant_caps, "Set the font variant caps.");
+    define_property!(NestedBuilder, "font-variant-east-asian" => font_variant_east_asian, "Set the font variant east asian.");
+    define_property!(NestedBuilder, "font-kerning" => font_kerning, "Set the font kerning.");
+    define_property!(NestedBuilder, "font-size-adjust" => font_size_adjust, "Set the font size adjust.");
+    define_property!(NestedBuilder, "font-optical-sizing" => font_optical_sizing, "Set the font optical sizing.");
+    define_property!(NestedBuilder, "font-stretch" => font_stretch, "Set the font stretch.");
     define_property!(NestedBuilder, "text-align" => text_align, "Set the text alignment.");
+    define_property!(NestedBuilder, "text-indent" => text_indent, "Set the text indent.");
     define_property!(NestedBuilder, "text-decoration" => text_decoration, "Set the text decoration.");
+    define_property!(NestedBuilder, "text-decoration-line" => text_decoration_line, "Set the text decoration line.");
+    define_property!(NestedBuilder, "text-decoration-style" => text_decoration_style, "Set the text decoration style.");
+    define_property!(NestedBuilder, "text-decoration-thickness" => text_decoration_thickness, "Set the text decoration thickness.");
+    define_property!(NestedBuilder, "text-underline-offset" => text_underline_offset, "Set the text underline offset.");
+    define_property!(NestedBuilder, "text-shadow" => text_shadow, "Set the text shadow.");
     define_property!(NestedBuilder, "line-height" => line_height, "Set the line height.");
     define_property!(NestedBuilder, "letter-spacing" => letter_spacing, "Set the letter spacing.");
+    define_property!(NestedBuilder, "word-spacing" => word_spacing, "Set the word spacing.");
     define_property!(NestedBuilder, "text-transform" => text_transform, "Set the text transform.");
     define_property!(NestedBuilder, "white-space" => white_space, "Set the white-space mode.");
+    define_property!(NestedBuilder, "word-break" => word_break, "Set the word breaking mode.");
+    define_property!(NestedBuilder, "overflow-wrap" => overflow_wrap, "Set the overflow-wrap mode.");
+    define_property!(NestedBuilder, "hyphens" => hyphens, "Set the hyphenation mode.");
+    define_property!(NestedBuilder, "vertical-align" => vertical_align, "Set the vertical alignment.");
     define_property!(NestedBuilder, "margin" => margin, "Set the margin shorthand.", shorthand);
     define_property!(NestedBuilder, "margin-top" => margin_top, "Set the top margin.");
     define_property!(NestedBuilder, "margin-right" => margin_right, "Set the right margin.");
@@ -428,20 +514,40 @@ impl NestedBuilder {
     define_property!(NestedBuilder, "flex-shrink" => flex_shrink, "Set the flex shrink factor.");
     define_property!(NestedBuilder, "flex-basis" => flex_basis, "Set the flex basis.");
     define_property!(NestedBuilder, "justify-content" => justify_content, "Set justify-content.");
+    define_property!(NestedBuilder, "justify-items" => justify_items, "Set justify-items.");
+    define_property!(NestedBuilder, "justify-self" => justify_self, "Set justify-self.");
     define_property!(NestedBuilder, "align-items" => align_items, "Set align-items.");
+    define_property!(NestedBuilder, "align-content" => align_content, "Set align-content.");
     define_property!(NestedBuilder, "align-self" => align_self, "Set align-self.");
+    define_property!(NestedBuilder, "place-content" => place_content, "Set place-content.", shorthand);
+    define_property!(NestedBuilder, "place-items" => place_items, "Set place-items.", shorthand);
+    define_property!(NestedBuilder, "place-self" => place_self, "Set place-self.", shorthand);
+    define_property!(NestedBuilder, "order" => order, "Set the flex item order.");
     define_property!(NestedBuilder, "gap" => gap, "Set the gap size.");
     define_property!(NestedBuilder, "row-gap" => row_gap, "Set the row gap.");
     define_property!(NestedBuilder, "column-gap" => column_gap, "Set the column gap.");
     define_property!(NestedBuilder, "grid" => grid, "Set the grid shorthand.", shorthand);
     define_property!(NestedBuilder, "grid-template-columns" => grid_template_columns, "Set grid template columns.");
     define_property!(NestedBuilder, "grid-template-rows" => grid_template_rows, "Set grid template rows.");
+    define_property!(NestedBuilder, "grid-auto-flow" => grid_auto_flow, "Set grid auto flow.");
+    define_property!(NestedBuilder, "grid-auto-columns" => grid_auto_columns, "Set grid auto columns.");
+    define_property!(NestedBuilder, "grid-auto-rows" => grid_auto_rows, "Set grid auto rows.");
     define_property!(NestedBuilder, "position" => position, "Set the position mode.");
     define_property!(NestedBuilder, "top" => top, "Set the top offset.");
     define_property!(NestedBuilder, "right" => right, "Set the right offset.");
     define_property!(NestedBuilder, "bottom" => bottom, "Set the bottom offset.");
     define_property!(NestedBuilder, "left" => left, "Set the left offset.");
     define_property!(NestedBuilder, "z-index" => z_index, "Set the z-index.");
+    define_property!(NestedBuilder, "float" => float, "Set the float direction.");
+    define_property!(NestedBuilder, "clear" => clear, "Set the clear behavior.");
+    define_property!(NestedBuilder, "contain" => contain, "Set the containment mode.");
+    define_property!(NestedBuilder, "content-visibility" => content_visibility, "Set the content visibility.");
+    define_property!(NestedBuilder, "will-change" => will_change, "Set the will-change hint.");
+    define_property!(NestedBuilder, "isolation" => isolation, "Set the isolation mode.");
+    define_property!(NestedBuilder, "mix-blend-mode" => mix_blend_mode, "Set the blend mode.");
+    define_property!(NestedBuilder, "image-rendering" => image_rendering, "Set the image rendering mode.");
+    define_property!(NestedBuilder, "container-type" => container_type, "Set the container query type.");
+    define_property!(NestedBuilder, "container-name" => container_name, "Set the container query name.");
     define_property!(NestedBuilder, "animation" => animation, "Set the animation shorthand.", shorthand);
     define_property!(NestedBuilder, "animation-name" => animation_name, "Set the animation name.");
     define_property!(NestedBuilder, "animation-duration" => animation_duration, "Set the animation duration.");
@@ -557,10 +663,7 @@ mod tests {
     #[test]
     fn rule_builder_multiple_selectors() {
         let r = RuleBuilder::new()
-            .selectors(vec![
-                Selector::class("btn"),
-                Selector::class("button"),
-            ])
+            .selectors(vec![Selector::class("btn"), Selector::class("button")])
             .property("color", Color::named("red"))
             .build();
         assert_eq!(r.selectors.len(), 2);
@@ -578,7 +681,10 @@ mod tests {
     fn nested_builder_preserves_decls() {
         let n = NestedBuilder::new()
             .selector(Selector::pseudo_class("hover"))
-            .decl(Declaration::new("color", Value::Color(Color::named("blue"))))
+            .decl(Declaration::new(
+                "color",
+                Value::Color(Color::named("blue")),
+            ))
             .build();
         assert_eq!(n.declarations.len(), 1);
         assert_eq!(n.selectors.len(), 1);
@@ -705,6 +811,192 @@ mod tests {
     }
 
     #[test]
+    fn rule_builder_background_and_object_fit_table() {
+        type PropFn = fn(RuleBuilder) -> RuleBuilder;
+        let cases: Vec<(&str, PropFn)> = vec![
+            ("background-image", |b| b.background_image("url(foo.png)")),
+            ("background-position", |b| b.background_position("center")),
+            ("background-size", |b| b.background_size("cover")),
+            ("background-repeat", |b| b.background_repeat("no-repeat")),
+            ("background-attachment", |b| {
+                b.background_attachment("fixed")
+            }),
+            ("background-origin", |b| b.background_origin("border-box")),
+            ("background-clip", |b| b.background_clip("padding-box")),
+            ("object-fit", |b| b.object_fit("cover")),
+            ("object-position", |b| b.object_position("50% 50%")),
+        ];
+
+        for (expected_name, builder_fn) in cases {
+            let r = builder_fn(RuleBuilder::new().selector(Selector::class("x"))).build();
+            assert_eq!(
+                r.declarations.len(),
+                1,
+                "expected one declaration for {}",
+                expected_name
+            );
+            assert_eq!(r.declarations[0].name, expected_name);
+            let rendered = r.to_string();
+            assert!(
+                rendered.contains(expected_name),
+                "rendered CSS should contain {}",
+                expected_name
+            );
+        }
+    }
+
+    #[test]
+    fn rule_builder_flex_grid_alignment_table() {
+        type PropFn = fn(RuleBuilder) -> RuleBuilder;
+        let cases: Vec<(&str, PropFn)> = vec![
+            ("justify-items", |b| b.justify_items("center")),
+            ("justify-self", |b| b.justify_self("end")),
+            ("align-content", |b| b.align_content("space-between")),
+            ("place-content", |b| b.place_content("center")),
+            ("place-items", |b| b.place_items("center")),
+            ("place-self", |b| b.place_self("stretch")),
+            ("order", |b| b.order(1)),
+            ("grid-auto-flow", |b| b.grid_auto_flow("row dense")),
+            ("grid-auto-columns", |b| b.grid_auto_columns("200px")),
+            ("grid-auto-rows", |b| b.grid_auto_rows("min-content")),
+        ];
+
+        for (expected_name, builder_fn) in cases {
+            let r = builder_fn(RuleBuilder::new().selector(Selector::class("x"))).build();
+            assert_eq!(
+                r.declarations.len(),
+                1,
+                "expected one declaration for {}",
+                expected_name
+            );
+            assert_eq!(r.declarations[0].name, expected_name);
+            let rendered = r.to_string();
+            assert!(
+                rendered.contains(expected_name),
+                "rendered CSS should contain {}",
+                expected_name
+            );
+        }
+    }
+
+    #[test]
+    fn rule_builder_text_typography_table() {
+        type PropFn = fn(RuleBuilder) -> RuleBuilder;
+        let cases: Vec<(&str, PropFn)> = vec![
+            ("text-indent", |b| b.text_indent("2em")),
+            ("text-shadow", |b| b.text_shadow("1px 1px 2px black")),
+            ("text-decoration-line", |b| {
+                b.text_decoration_line("underline")
+            }),
+            ("text-decoration-style", |b| b.text_decoration_style("wavy")),
+            ("text-decoration-thickness", |b| {
+                b.text_decoration_thickness("2px")
+            }),
+            ("text-underline-offset", |b| b.text_underline_offset("3px")),
+            ("word-spacing", |b| b.word_spacing("0.25em")),
+            ("word-break", |b| b.word_break("break-all")),
+            ("overflow-wrap", |b| b.overflow_wrap("break-word")),
+            ("hyphens", |b| b.hyphens("auto")),
+            ("vertical-align", |b| b.vertical_align("middle")),
+        ];
+
+        for (expected_name, builder_fn) in cases {
+            let r = builder_fn(RuleBuilder::new().selector(Selector::class("x"))).build();
+            assert_eq!(
+                r.declarations.len(),
+                1,
+                "expected one declaration for {}",
+                expected_name
+            );
+            assert_eq!(r.declarations[0].name, expected_name);
+            let rendered = r.to_string();
+            assert!(
+                rendered.contains(expected_name),
+                "rendered CSS should contain {}",
+                expected_name
+            );
+        }
+    }
+
+    #[test]
+    fn rule_builder_layout_containment_table() {
+        type PropFn = fn(RuleBuilder) -> RuleBuilder;
+        let cases: Vec<(&str, PropFn)> = vec![
+            ("float", |b| b.float("left")),
+            ("clear", |b| b.clear("both")),
+            ("contain", |b| b.contain("layout")),
+            ("content-visibility", |b| b.content_visibility("auto")),
+            ("will-change", |b| b.will_change("transform")),
+            ("isolation", |b| b.isolation("isolate")),
+            ("mix-blend-mode", |b| b.mix_blend_mode("multiply")),
+            ("image-rendering", |b| b.image_rendering("pixelated")),
+            ("container-type", |b| b.container_type("inline-size")),
+            ("container-name", |b| b.container_name("sidebar")),
+        ];
+
+        for (expected_name, builder_fn) in cases {
+            let r = builder_fn(RuleBuilder::new().selector(Selector::class("x"))).build();
+            assert_eq!(
+                r.declarations.len(),
+                1,
+                "expected one declaration for {}",
+                expected_name
+            );
+            assert_eq!(r.declarations[0].name, expected_name);
+            let rendered = r.to_string();
+            assert!(
+                rendered.contains(expected_name),
+                "rendered CSS should contain {}",
+                expected_name
+            );
+        }
+    }
+
+    #[test]
+    fn rule_builder_font_features_table() {
+        type PropFn = fn(RuleBuilder) -> RuleBuilder;
+        let cases: Vec<(&str, PropFn)> = vec![
+            ("font-variant", |b| b.font_variant("small-caps")),
+            ("font-feature-settings", |b| {
+                b.font_feature_settings("\"liga\" 0")
+            }),
+            ("font-variant-numeric", |b| {
+                b.font_variant_numeric("tabular-nums")
+            }),
+            ("font-variant-ligatures", |b| {
+                b.font_variant_ligatures("common-ligatures")
+            }),
+            ("font-variant-caps", |b| {
+                b.font_variant_caps("all-small-caps")
+            }),
+            ("font-variant-east-asian", |b| {
+                b.font_variant_east_asian("ruby")
+            }),
+            ("font-kerning", |b| b.font_kerning("none")),
+            ("font-size-adjust", |b| b.font_size_adjust("0.5")),
+            ("font-optical-sizing", |b| b.font_optical_sizing("none")),
+            ("font-stretch", |b| b.font_stretch("expanded")),
+        ];
+
+        for (expected_name, builder_fn) in cases {
+            let r = builder_fn(RuleBuilder::new().selector(Selector::class("x"))).build();
+            assert_eq!(
+                r.declarations.len(),
+                1,
+                "expected one declaration for {}",
+                expected_name
+            );
+            assert_eq!(r.declarations[0].name, expected_name);
+            let rendered = r.to_string();
+            assert!(
+                rendered.contains(expected_name),
+                "rendered CSS should contain {}",
+                expected_name
+            );
+        }
+    }
+
+    #[test]
     fn nested_builder_color_extensions() {
         let n = NestedBuilder::new()
             .selector(Selector::pseudo_class("hover"))
@@ -715,6 +1007,161 @@ mod tests {
             .column_rule_color(Color::named("orange"))
             .build();
         assert_eq!(n.declarations.len(), 5);
+    }
+
+    #[test]
+    fn nested_builder_font_features_table() {
+        type PropFn = fn(NestedBuilder) -> NestedBuilder;
+        let cases: Vec<(&str, PropFn)> = vec![
+            ("font-variant", |b| b.font_variant("small-caps")),
+            ("font-feature-settings", |b| {
+                b.font_feature_settings("\"liga\" 0")
+            }),
+            ("font-variant-numeric", |b| {
+                b.font_variant_numeric("tabular-nums")
+            }),
+            ("font-variant-ligatures", |b| {
+                b.font_variant_ligatures("common-ligatures")
+            }),
+            ("font-variant-caps", |b| {
+                b.font_variant_caps("all-small-caps")
+            }),
+            ("font-variant-east-asian", |b| {
+                b.font_variant_east_asian("ruby")
+            }),
+            ("font-kerning", |b| b.font_kerning("none")),
+            ("font-size-adjust", |b| b.font_size_adjust("0.5")),
+            ("font-optical-sizing", |b| b.font_optical_sizing("none")),
+            ("font-stretch", |b| b.font_stretch("expanded")),
+        ];
+
+        for (expected_name, builder_fn) in cases {
+            let n =
+                builder_fn(NestedBuilder::new().selector(Selector::pseudo_class("hover"))).build();
+            assert_eq!(
+                n.declarations.len(),
+                1,
+                "expected one declaration for {}",
+                expected_name
+            );
+            assert_eq!(n.declarations[0].name, expected_name);
+            let rendered = n.to_string();
+            assert!(
+                rendered.contains(expected_name),
+                "rendered CSS should contain {}",
+                expected_name
+            );
+        }
+    }
+
+    #[test]
+    fn nested_builder_layout_containment_table() {
+        type PropFn = fn(NestedBuilder) -> NestedBuilder;
+        let cases: Vec<(&str, PropFn)> = vec![
+            ("float", |b| b.float("left")),
+            ("clear", |b| b.clear("both")),
+            ("contain", |b| b.contain("layout")),
+            ("content-visibility", |b| b.content_visibility("auto")),
+            ("will-change", |b| b.will_change("transform")),
+            ("isolation", |b| b.isolation("isolate")),
+            ("mix-blend-mode", |b| b.mix_blend_mode("multiply")),
+            ("image-rendering", |b| b.image_rendering("pixelated")),
+            ("container-type", |b| b.container_type("inline-size")),
+            ("container-name", |b| b.container_name("sidebar")),
+        ];
+
+        for (expected_name, builder_fn) in cases {
+            let n =
+                builder_fn(NestedBuilder::new().selector(Selector::pseudo_class("hover"))).build();
+            assert_eq!(
+                n.declarations.len(),
+                1,
+                "expected one declaration for {}",
+                expected_name
+            );
+            assert_eq!(n.declarations[0].name, expected_name);
+            let rendered = n.to_string();
+            assert!(
+                rendered.contains(expected_name),
+                "rendered CSS should contain {}",
+                expected_name
+            );
+        }
+    }
+
+    #[test]
+    fn nested_builder_text_typography_table() {
+        type PropFn = fn(NestedBuilder) -> NestedBuilder;
+        let cases: Vec<(&str, PropFn)> = vec![
+            ("text-indent", |b| b.text_indent("2em")),
+            ("text-shadow", |b| b.text_shadow("1px 1px 2px black")),
+            ("text-decoration-line", |b| {
+                b.text_decoration_line("underline")
+            }),
+            ("text-decoration-style", |b| b.text_decoration_style("wavy")),
+            ("text-decoration-thickness", |b| {
+                b.text_decoration_thickness("2px")
+            }),
+            ("text-underline-offset", |b| b.text_underline_offset("3px")),
+            ("word-spacing", |b| b.word_spacing("0.25em")),
+            ("word-break", |b| b.word_break("break-all")),
+            ("overflow-wrap", |b| b.overflow_wrap("break-word")),
+            ("hyphens", |b| b.hyphens("auto")),
+            ("vertical-align", |b| b.vertical_align("middle")),
+        ];
+
+        for (expected_name, builder_fn) in cases {
+            let n =
+                builder_fn(NestedBuilder::new().selector(Selector::pseudo_class("hover"))).build();
+            assert_eq!(
+                n.declarations.len(),
+                1,
+                "expected one declaration for {}",
+                expected_name
+            );
+            assert_eq!(n.declarations[0].name, expected_name);
+            let rendered = n.to_string();
+            assert!(
+                rendered.contains(expected_name),
+                "rendered CSS should contain {}",
+                expected_name
+            );
+        }
+    }
+
+    #[test]
+    fn nested_builder_flex_grid_alignment_table() {
+        type PropFn = fn(NestedBuilder) -> NestedBuilder;
+        let cases: Vec<(&str, PropFn)> = vec![
+            ("justify-items", |b| b.justify_items("center")),
+            ("justify-self", |b| b.justify_self("end")),
+            ("align-content", |b| b.align_content("space-between")),
+            ("place-content", |b| b.place_content("center")),
+            ("place-items", |b| b.place_items("center")),
+            ("place-self", |b| b.place_self("stretch")),
+            ("order", |b| b.order(1)),
+            ("grid-auto-flow", |b| b.grid_auto_flow("row dense")),
+            ("grid-auto-columns", |b| b.grid_auto_columns("200px")),
+            ("grid-auto-rows", |b| b.grid_auto_rows("min-content")),
+        ];
+
+        for (expected_name, builder_fn) in cases {
+            let n =
+                builder_fn(NestedBuilder::new().selector(Selector::pseudo_class("hover"))).build();
+            assert_eq!(
+                n.declarations.len(),
+                1,
+                "expected one declaration for {}",
+                expected_name
+            );
+            assert_eq!(n.declarations[0].name, expected_name);
+            let rendered = n.to_string();
+            assert!(
+                rendered.contains(expected_name),
+                "rendered CSS should contain {}",
+                expected_name
+            );
+        }
     }
 
     #[test]
@@ -747,6 +1194,42 @@ mod tests {
             .mask("url(#m)")
             .build();
         assert_eq!(n.declarations.len(), 2);
+    }
+
+    #[test]
+    fn nested_builder_background_and_object_fit_table() {
+        type PropFn = fn(NestedBuilder) -> NestedBuilder;
+        let cases: Vec<(&str, PropFn)> = vec![
+            ("background-image", |b| b.background_image("url(foo.png)")),
+            ("background-position", |b| b.background_position("center")),
+            ("background-size", |b| b.background_size("cover")),
+            ("background-repeat", |b| b.background_repeat("no-repeat")),
+            ("background-attachment", |b| {
+                b.background_attachment("fixed")
+            }),
+            ("background-origin", |b| b.background_origin("border-box")),
+            ("background-clip", |b| b.background_clip("padding-box")),
+            ("object-fit", |b| b.object_fit("cover")),
+            ("object-position", |b| b.object_position("50% 50%")),
+        ];
+
+        for (expected_name, builder_fn) in cases {
+            let n =
+                builder_fn(NestedBuilder::new().selector(Selector::pseudo_class("hover"))).build();
+            assert_eq!(
+                n.declarations.len(),
+                1,
+                "expected one declaration for {}",
+                expected_name
+            );
+            assert_eq!(n.declarations[0].name, expected_name);
+            let rendered = n.to_string();
+            assert!(
+                rendered.contains(expected_name),
+                "rendered CSS should contain {}",
+                expected_name
+            );
+        }
     }
 
     // ── Coverage: Display for NestedBlock and nest method ──────
@@ -790,7 +1273,10 @@ mod tests {
                 query: Cow::Borrowed("screen"),
                 rules: vec![],
             })
-            .nest(|b| b.selector(Selector::class("inner")).property("color", Color::named("red")))
+            .nest(|b| {
+                b.selector(Selector::class("inner"))
+                    .property("color", Color::named("red"))
+            })
             .build();
         assert_eq!(n.nested.len(), 2);
         let mut expected_is_at_rule = [true, false];

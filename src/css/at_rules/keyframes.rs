@@ -5,16 +5,14 @@ use std::fmt;
 use super::Keyframe;
 
 /// Render a `@keyframes name { ... }` block.
-pub fn render(
-    f: &mut fmt::Formatter<'_>,
-    name: &str,
-    keyframes: &[Keyframe],
-) -> fmt::Result {
+pub fn render(f: &mut fmt::Formatter<'_>, name: &str, keyframes: &[Keyframe]) -> fmt::Result {
     let mut s = format!("@keyframes {} {{", name);
     for kf in keyframes {
         s.push_str(&format!("\n  {}", kf));
     }
-    if !keyframes.is_empty() { s.push('\n'); }
+    if !keyframes.is_empty() {
+        s.push('\n');
+    }
     s.push('}');
     f.write_str(&s)
 }
@@ -23,14 +21,18 @@ pub fn render(
 pub fn render_keyframe(f: &mut fmt::Formatter<'_>, kf: &Keyframe) -> fmt::Result {
     let mut s = String::new();
     for (i, sel) in kf.selectors.iter().enumerate() {
-        if i > 0 { s.push_str(", "); }
+        if i > 0 {
+            s.push_str(", ");
+        }
         s.push_str(sel);
     }
     s.push_str(" {");
     for d in &kf.declarations {
         s.push_str(&format!("\n    {}", d));
     }
-    if !kf.declarations.is_empty() { s.push_str("\n  "); }
+    if !kf.declarations.is_empty() {
+        s.push_str("\n  ");
+    }
     s.push('}');
     f.write_str(&s)
 }
@@ -48,7 +50,10 @@ mod tests {
     fn render_keyframe_with_declarations() {
         let kf = Keyframe {
             selectors: vec![Cow::Borrowed("from")],
-            declarations: vec![Declaration::new("opacity", Value::Number(Number::from(0.0)))],
+            declarations: vec![Declaration::new(
+                "opacity",
+                Value::Number(Number::from(0.0)),
+            )],
         };
         let s = kf.to_string();
         assert!(s.contains("from"));

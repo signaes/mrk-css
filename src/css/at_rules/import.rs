@@ -10,8 +10,12 @@ pub fn render(
     media: Option<&str>,
 ) -> fmt::Result {
     let mut s = format!("@import \"{}\"", url);
-    if let Some(sup) = supports { s.push_str(&format!(" supports({})", sup)); }
-    if let Some(m) = media { s.push_str(&format!(" {}", m)); }
+    if let Some(sup) = supports {
+        s.push_str(&format!(" supports({})", sup));
+    }
+    if let Some(m) = media {
+        s.push_str(&format!(" {}", m));
+    }
     s.push(';');
     f.write_str(&s)
 }

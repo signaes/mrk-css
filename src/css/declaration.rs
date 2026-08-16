@@ -174,8 +174,8 @@ mod tests {
 
     #[test]
     fn declaration_block_extend_from_block() {
-        let a = DeclarationBlock::new()
-            .decl(Declaration::new("a", Value::Color(Color::named("red"))));
+        let a =
+            DeclarationBlock::new().decl(Declaration::new("a", Value::Color(Color::named("red"))));
         let b = DeclarationBlock::new()
             .decl(Declaration::new("b", Value::Color(Color::named("blue"))))
             .extend_from_block(&a);

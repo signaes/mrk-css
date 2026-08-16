@@ -11,7 +11,9 @@ pub fn render(
     rules: &[RuleOrAtRule],
 ) -> fmt::Result {
     let mut s = String::from("@layer");
-    if let Some(n) = name { s.push_str(&format!(" {}", n)); }
+    if let Some(n) = name {
+        s.push_str(&format!(" {}", n));
+    }
     if rules.is_empty() {
         s.push(';');
     } else {

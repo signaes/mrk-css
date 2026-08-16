@@ -195,7 +195,12 @@ impl std::fmt::Display for Selector {
             Selector::Type(t) => f.write_str(t),
             Selector::Class(c) => write!(f, ".{}", c),
             Selector::Id(i) => write!(f, "#{}", i),
-            Selector::Attribute { name, op, value, case } => {
+            Selector::Attribute {
+                name,
+                op,
+                value,
+                case,
+            } => {
                 let mut s = String::from("[");
                 s.push_str(name);
                 match op {
@@ -239,12 +244,14 @@ impl std::fmt::Display for PseudoSelector {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             PseudoSelector::Class(c) => write!(f, ":{}", c),
-            PseudoSelector::Id(i) => write!(f, ":{}", i),
+            PseudoSelector::Id(i) => write!(f, "#{}", i),
             PseudoSelector::Element(e) => write!(f, "::{}", e),
             PseudoSelector::Function { name, args } => {
                 let mut s = format!(":{}(", name);
                 for (i, arg) in args.iter().enumerate() {
-                    if i > 0 { s.push_str(", "); }
+                    if i > 0 {
+                        s.push_str(", ");
+                    }
                     s.push_str(&arg.to_string());
                 }
                 s.push(')');
@@ -351,7 +358,9 @@ mod tests {
 
     #[test]
     fn display_pseudo_not() {
-        let s = Selector::Pseudo(PseudoSelector::Not(vec![Selector::Class(Cow::Borrowed("active"))]));
+        let s = Selector::Pseudo(PseudoSelector::Not(vec![Selector::Class(Cow::Borrowed(
+            "active",
+        ))]));
         assert_eq!(s.to_string(), ":not(.active)");
     }
 
@@ -454,13 +463,22 @@ mod tests {
 
     #[test]
     fn selector_fn() {
-        assert_eq!(selector("[data-x=\"foo\" i]").to_string(), "[data-x=\"foo\" i]");
+        assert_eq!(
+            selector("[data-x=\"foo\" i]").to_string(),
+            "[data-x=\"foo\" i]"
+        );
     }
 
     #[test]
     fn equality() {
-        assert_eq!(Selector::Class(Cow::Borrowed("a")), Selector::Class(Cow::Borrowed("a")));
-        assert_ne!(Selector::Class(Cow::Borrowed("a")), Selector::Class(Cow::Borrowed("b")));
+        assert_eq!(
+            Selector::Class(Cow::Borrowed("a")),
+            Selector::Class(Cow::Borrowed("a"))
+        );
+        assert_ne!(
+            Selector::Class(Cow::Borrowed("a")),
+            Selector::Class(Cow::Borrowed("b"))
+        );
     }
 
     #[test]
@@ -531,7 +549,21 @@ mod tests {
     #[test]
     fn display_pseudo_id() {
         let s = Selector::Pseudo(PseudoSelector::Id(Cow::Borrowed("main")));
-        assert_eq!(s.to_string(), ":main");
+        assert_eq!(s.to_string(), "#main");
+    }
+
+    #[test]
+    fn display_pseudo_selectors_table() {
+        let cases: [(PseudoSelector, &str); 5] = [
+            (PseudoSelector::Class(Cow::Borrowed("hover")), ":hover"),
+            (PseudoSelector::Id(Cow::Borrowed("main")), "#main"),
+            (PseudoSelector::Element(Cow::Borrowed("before")), "::before"),
+            (PseudoSelector::Lang(Cow::Borrowed("en")), ":lang(en)"),
+            (PseudoSelector::Dir(Cow::Borrowed("ltr")), ":dir(ltr)"),
+        ];
+        for (sel, expected) in cases {
+            assert_eq!(Selector::Pseudo(sel).to_string(), expected);
+        }
     }
 
     #[test]
@@ -569,19 +601,25 @@ mod tests {
 
     #[test]
     fn display_pseudo_is() {
-        let s = Selector::Pseudo(PseudoSelector::Is(vec![Selector::Class(Cow::Borrowed("a"))]));
+        let s = Selector::Pseudo(PseudoSelector::Is(vec![Selector::Class(Cow::Borrowed(
+            "a",
+        ))]));
         assert_eq!(s.to_string(), ":is(.a)");
     }
 
     #[test]
     fn display_pseudo_where() {
-        let s = Selector::Pseudo(PseudoSelector::Where(vec![Selector::Class(Cow::Borrowed("a"))]));
+        let s = Selector::Pseudo(PseudoSelector::Where(vec![Selector::Class(Cow::Borrowed(
+            "a",
+        ))]));
         assert_eq!(s.to_string(), ":where(.a)");
     }
 
     #[test]
     fn display_pseudo_has() {
-        let s = Selector::Pseudo(PseudoSelector::Has(vec![Selector::Class(Cow::Borrowed("a"))]));
+        let s = Selector::Pseudo(PseudoSelector::Has(vec![Selector::Class(Cow::Borrowed(
+            "a",
+        ))]));
         assert_eq!(s.to_string(), ":has(.a)");
     }
 
@@ -606,7 +644,10 @@ mod tests {
     #[test]
     fn display_selector_arg_selectors() {
         // Direct test for SelectorArg::Selectors via Display
-        let arg = SelectorArg::Selectors(vec![Selector::Class(Cow::Borrowed("a")), Selector::Class(Cow::Borrowed("b"))]);
+        let arg = SelectorArg::Selectors(vec![
+            Selector::Class(Cow::Borrowed("a")),
+            Selector::Class(Cow::Borrowed("b")),
+        ]);
         assert_eq!(arg.to_string(), ".a, .b");
     }
 

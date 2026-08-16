@@ -34,8 +34,7 @@ impl CustomProperty {
 }
 
 fn is_custom_prop_char(c: char) -> bool {
-    c.is_ascii_alphanumeric()
-        || matches!(c, '-' | '_' | '\u{0080}'..='\u{10FFFF}')
+    c.is_ascii_alphanumeric() || matches!(c, '-' | '_' | '\u{0080}'..='\u{10FFFF}')
 }
 
 impl fmt::Display for CustomProperty {
@@ -49,42 +48,32 @@ mod tests {
     use super::*;
 
     #[test]
-    fn new_valid() {
-        let cp = CustomProperty::new("--my-var").unwrap();
-        assert_eq!(cp.name(), "--my-var");
+    fn new_valid_names() {
+        let cases: [&str; 6] = ["--my-var", "--my_var", "--x1", "--1", "--2x", "--x"];
+        for name in cases {
+            let cp = CustomProperty::new(name).expect(name);
+            assert_eq!(cp.name(), name);
+        }
     }
 
     #[test]
-    fn new_with_underscore() {
-        let cp = CustomProperty::new("--my_var").unwrap();
-        assert_eq!(cp.name(), "--my_var");
-    }
-
-    #[test]
-    fn new_with_digits() {
-        assert!(CustomProperty::new("--x1").is_some());
-    }
-
-    #[test]
-    fn new_missing_dashes() {
-        assert!(CustomProperty::new("my-var").is_none());
-        assert!(CustomProperty::new("-my-var").is_none());
-    }
-
-    #[test]
-    fn new_just_dashes() {
-        assert!(CustomProperty::new("--").is_none());
-    }
-
-    #[test]
-    fn new_with_space_fails() {
-        assert!(CustomProperty::new("--my var").is_none());
-    }
-
-    #[test]
-    fn new_with_special_char_fails() {
-        assert!(CustomProperty::new("--my!var").is_none());
-        assert!(CustomProperty::new("--my/var").is_none());
+    fn new_invalid_names() {
+        let cases: [&str; 8] = [
+            "my-var",
+            "-my-var",
+            "--",
+            "--my var",
+            "--my!var",
+            "--my/var",
+            "--my\u{007F}var",
+            "",
+        ];
+        for name in cases {
+            assert!(
+                CustomProperty::new(name).is_none(),
+                "{name} should be invalid"
+            );
+        }
     }
 
     #[test]
@@ -104,5 +93,19 @@ mod tests {
     fn new_with_unicode() {
         assert!(CustomProperty::new("--\u{0080}var").is_some());
         assert!(CustomProperty::new("--emoji-\u{1F600}").is_some());
+    }
+
+    #[test]
+    fn new_starts_with_digit_is_valid() {
+        // Custom property names are a special <ident> token; a digit
+        // immediately after `--` is allowed.
+        assert!(CustomProperty::new("--1").is_some());
+        assert!(CustomProperty::new("--2x").is_some());
+    }
+
+    #[test]
+    fn new_rejects_empty_name_and_control_chars() {
+        assert!(CustomProperty::new("--").is_none());
+        assert!(CustomProperty::new("--my\u{007F}var").is_none());
     }
 }

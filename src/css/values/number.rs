@@ -104,8 +104,8 @@ impl FloatConvert for Integer {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use super::super::numeric::FloatConvert;
+    use super::*;
 
     #[test]
     fn number_constructor() {

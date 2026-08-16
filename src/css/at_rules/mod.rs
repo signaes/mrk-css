@@ -67,9 +67,7 @@ pub enum AtRule {
         keyframes: Vec<Keyframe>,
     },
     /// `@font-face { ... }`
-    FontFace {
-        declarations: Vec<Declaration>,
-    },
+    FontFace { declarations: Vec<Declaration> },
     /// `@page [pseudo] { ... }`
     Page {
         pseudo: Option<Cow<'static, str>>,
@@ -83,9 +81,7 @@ pub enum AtRule {
         media: Option<Cow<'static, str>>,
     },
     /// `@charset "encoding";`
-    Charset {
-        encoding: Cow<'static, str>,
-    },
+    Charset { encoding: Cow<'static, str> },
     /// `@namespace [prefix] url;`
     Namespace {
         prefix: Option<Cow<'static, str>>,
@@ -194,6 +190,104 @@ impl AtRule {
             url: url.into(),
         }
     }
+
+    /// Create a `@container` at-rule with just a query.
+    pub fn container(query: impl Into<Cow<'static, str>>) -> AtRuleBuilder {
+        AtRuleBuilder {
+            at_rule: AtRule::Container {
+                name: None,
+                query: query.into(),
+                rules: Vec::new(),
+            },
+        }
+    }
+
+    /// Create a named `@container` at-rule.
+    pub fn container_named(
+        name: impl Into<Cow<'static, str>>,
+        query: impl Into<Cow<'static, str>>,
+    ) -> AtRuleBuilder {
+        AtRuleBuilder {
+            at_rule: AtRule::Container {
+                name: Some(name.into()),
+                query: query.into(),
+                rules: Vec::new(),
+            },
+        }
+    }
+
+    /// Create a `@scope` at-rule with just a root selector.
+    ///
+    /// `root` should be written without the outer parentheses
+    /// (e.g. `".card"`).
+    pub fn scope(root: impl Into<Cow<'static, str>>) -> AtRuleBuilder {
+        AtRuleBuilder {
+            at_rule: AtRule::Scope {
+                root: Some(root.into()),
+                limit: None,
+                rules: Vec::new(),
+            },
+        }
+    }
+
+    /// Create a `@scope` at-rule with both a root and a `to` limit.
+    ///
+    /// `root` and `limit` should be written without the outer
+    /// parentheses.
+    pub fn scope_to(
+        root: impl Into<Cow<'static, str>>,
+        limit: impl Into<Cow<'static, str>>,
+    ) -> AtRuleBuilder {
+        AtRuleBuilder {
+            at_rule: AtRule::Scope {
+                root: Some(root.into()),
+                limit: Some(limit.into()),
+                rules: Vec::new(),
+            },
+        }
+    }
+
+    /// Create a `@page` at-rule.
+    pub fn page() -> AtRuleBuilder {
+        AtRuleBuilder {
+            at_rule: AtRule::Page {
+                pseudo: None,
+                declarations: Vec::new(),
+                margin_boxes: Vec::new(),
+            },
+        }
+    }
+
+    /// Create a `@page` at-rule with a pseudo-class.
+    pub fn page_pseudo(pseudo: impl Into<Cow<'static, str>>) -> AtRuleBuilder {
+        AtRuleBuilder {
+            at_rule: AtRule::Page {
+                pseudo: Some(pseudo.into()),
+                declarations: Vec::new(),
+                margin_boxes: Vec::new(),
+            },
+        }
+    }
+
+    /// Create an anonymous block `@layer` at-rule.
+    pub fn layer() -> AtRuleBuilder {
+        AtRuleBuilder {
+            at_rule: AtRule::Layer {
+                name: None,
+                rules: Vec::new(),
+            },
+        }
+    }
+
+    /// Create a named block `@layer` at-rule.
+    pub fn layer_named(name: impl Into<Cow<'static, str>>) -> AtRuleBuilder {
+        AtRuleBuilder {
+            at_rule: AtRule::Layer {
+                name: Some(name.into()),
+                rules: Vec::new(),
+            },
+        }
+    }
 }
 
 // ── Display ─────────────────────────────────────────────────────────
@@ -203,13 +297,25 @@ impl fmt::Display for AtRule {
         match self {
             AtRule::Media { query, rules } => media::render(f, query, rules),
             AtRule::Supports { condition, rules } => supports::render(f, condition, rules),
-            AtRule::Container { name, query, rules } => container::render(f, name.as_deref(), query, rules),
-            AtRule::Scope { root, limit, rules } => scope::render(f, root.as_deref(), limit.as_deref(), rules),
+            AtRule::Container { name, query, rules } => {
+                container::render(f, name.as_deref(), query, rules)
+            }
+            AtRule::Scope { root, limit, rules } => {
+                scope::render(f, root.as_deref(), limit.as_deref(), rules)
+            }
             AtRule::Layer { name, rules } => layer::render(f, name.as_deref(), rules),
             AtRule::Keyframes { name, keyframes } => keyframes::render(f, name, keyframes),
             AtRule::FontFace { declarations } => font_face::render(f, declarations),
-            AtRule::Page { pseudo, declarations, margin_boxes } => page::render(f, pseudo.as_deref(), declarations, margin_boxes),
-            AtRule::Import { url, supports, media } => import::render(f, url, supports.as_deref(), media.as_deref()),
+            AtRule::Page {
+                pseudo,
+                declarations,
+                margin_boxes,
+            } => page::render(f, pseudo.as_deref(), declarations, margin_boxes),
+            AtRule::Import {
+                url,
+                supports,
+                media,
+            } => import::render(f, url, supports.as_deref(), media.as_deref()),
             AtRule::Charset { encoding } => charset::render(f, encoding),
             AtRule::Namespace { prefix, url } => namespace::render(f, prefix.as_deref(), url),
         }
@@ -241,7 +347,10 @@ pub struct AtRuleBuilder {
 
 impl AtRuleBuilder {
     /// Add a rule via a closure (for `@media`, `@supports`, etc.).
-    pub fn rule(mut self, f: impl FnOnce(crate::css::rule::RuleBuilder) -> crate::css::rule::RuleBuilder) -> Self {
+    pub fn rule(
+        mut self,
+        f: impl FnOnce(crate::css::rule::RuleBuilder) -> crate::css::rule::RuleBuilder,
+    ) -> Self {
         let rule = f(crate::css::rule::RuleBuilder::new()).build();
         self.add_rule(rule);
         self
@@ -251,15 +360,20 @@ impl AtRuleBuilder {
         match &mut self.at_rule {
             AtRule::Media { rules, .. }
             | AtRule::Supports { rules, .. }
-            | AtRule::Layer { rules, .. } => {
+            | AtRule::Layer { rules, .. }
+            | AtRule::Container { rules, .. }
+            | AtRule::Scope { rules, .. } => {
                 rules.push(RuleOrAtRule::Rule(rule));
             }
             AtRule::Keyframes { keyframes, .. } => {
-                // Flatten: wrap each selector as a Keyframe
-                // This is a simplification; for now push a keyframe
-                // with the rule's selectors and declarations.
-                let selectors: Vec<Cow<'static, str>> = rule.selectors.iter()
-                    .map(|s| Cow::Owned(s.to_string()))
+                // Keyframe selectors must be bare `from`, `to`, or a
+                // `<percentage>%`. Strip the leading `.` from class
+                // selectors (and other selector punctuation) when the
+                // underlying name is a valid keyframe selector.
+                let selectors: Vec<Cow<'static, str>> = rule
+                    .selectors
+                    .iter()
+                    .map(|s| Cow::Owned(keyframe_selector_string(s)))
                     .collect();
                 keyframes.push(Keyframe {
                     selectors,
@@ -279,8 +393,7 @@ impl AtRuleBuilder {
     /// Add a declaration (for `@font-face`, `@page`, `@keyframes`).
     pub fn decl(mut self, decl: Declaration) -> Self {
         match &mut self.at_rule {
-            AtRule::FontFace { declarations, .. }
-            | AtRule::Page { declarations, .. } => {
+            AtRule::FontFace { declarations, .. } | AtRule::Page { declarations, .. } => {
                 declarations.push(decl);
             }
             AtRule::Keyframes { keyframes, .. } => {
@@ -294,7 +407,11 @@ impl AtRuleBuilder {
     }
 
     /// Add a property via name/value (for `@font-face`, `@page`).
-    pub fn property(mut self, name: impl Into<Cow<'static, str>>, value: impl Into<crate::css::properties::Value>) -> Self {
+    pub fn property(
+        mut self,
+        name: impl Into<Cow<'static, str>>,
+        value: impl Into<crate::css::properties::Value>,
+    ) -> Self {
         self = self.decl(Declaration::new(name.into(), value.into()));
         self
     }
@@ -305,11 +422,37 @@ impl AtRuleBuilder {
     }
 }
 
+/// Convert a selector to a `@keyframes` selector string.
+///
+/// Keyframe selectors must be `from`, `to`, or `<percentage>%`. When
+/// the selector is a class, type, raw, or id selector whose name is
+/// one of those forms, the name is returned verbatim; otherwise the
+/// full selector string is returned as a fallback.
+fn keyframe_selector_string(sel: &crate::css::selector::Selector) -> String {
+    use crate::css::selector::{PseudoSelector, Selector};
+    let name = match sel {
+        Selector::Class(name) | Selector::Type(name) | Selector::Raw(name) => Some(name.as_ref()),
+        Selector::Id(name) => Some(name.as_ref()),
+        Selector::Pseudo(PseudoSelector::Class(name)) => Some(name.as_ref()),
+        _ => None,
+    };
+    if let Some(name) = name {
+        let lower = name.to_lowercase();
+        if lower == "from" || lower == "to" {
+            return lower;
+        }
+        if name.trim_end_matches('%').parse::<f32>().is_ok() && name.ends_with('%') {
+            return name.to_string();
+        }
+    }
+    sel.to_string()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::css::selector::Selector;
-    use crate::css::values::Color;
+    use crate::css::values::{Color, Length};
 
     // ── Helper constructors ──────────────────────────────────────
 
@@ -346,9 +489,7 @@ mod tests {
     #[test]
     fn charset_constructor() {
         let at = AtRule::charset("UTF-8");
-        assert!(
-            matches!(at, AtRule::Charset { ref encoding } if encoding == "UTF-8")
-        );
+        assert!(matches!(at, AtRule::Charset { ref encoding } if encoding == "UTF-8"));
     }
 
     #[test]
@@ -369,7 +510,10 @@ mod tests {
     #[test]
     fn display_media_with_rule() {
         let at = AtRule::media("(min-width: 800px)")
-            .rule(|r| r.selector(Selector::class("btn")).property("color", Color::named("red")))
+            .rule(|r| {
+                r.selector(Selector::class("btn"))
+                    .property("color", Color::named("red"))
+            })
             .build();
         let s = at.to_string();
         assert!(s.contains("@media (min-width: 800px) {"));
@@ -379,9 +523,18 @@ mod tests {
 
     #[test]
     fn display_supports() {
-        let at = AtRule::supports("display: grid").build();
-        let s = at.to_string();
-        assert_eq!(s, "@supports display: grid {}");
+        let cases: [(&str, &str); 3] = [
+            ("display: grid", "@supports (display: grid) {}"),
+            ("(display: grid)", "@supports (display: grid) {}"),
+            (
+                "(display: grid) or (display: flex)",
+                "@supports (display: grid) or (display: flex) {}",
+            ),
+        ];
+        for (condition, expected) in cases {
+            let at = AtRule::supports(condition).build();
+            assert_eq!(at.to_string(), expected);
+        }
     }
 
     #[test]
@@ -444,9 +597,10 @@ mod tests {
     fn keyframe_construction() {
         let kf = Keyframe {
             selectors: vec!["from".into(), "to".into()],
-            declarations: vec![
-                Declaration::new("opacity", crate::css::properties::Value::Number(0.0.into())),
-            ],
+            declarations: vec![Declaration::new(
+                "opacity",
+                crate::css::properties::Value::Number(0.0.into()),
+            )],
         };
         assert_eq!(kf.selectors.len(), 2);
     }
@@ -455,9 +609,10 @@ mod tests {
     fn keyframe_display() {
         let kf = Keyframe {
             selectors: vec!["from".into()],
-            declarations: vec![
-                Declaration::new("opacity", crate::css::properties::Value::Number(0.0.into())),
-            ],
+            declarations: vec![Declaration::new(
+                "opacity",
+                crate::css::properties::Value::Number(0.0.into()),
+            )],
         };
         let s = kf.to_string();
         assert!(s.contains("from"));
@@ -469,8 +624,14 @@ mod tests {
     #[test]
     fn builder_media_with_rules() {
         let at = AtRule::media("screen")
-            .rule(|r| r.selector(Selector::class("btn")).property("color", Color::named("red")))
-            .rule(|r| r.selector(Selector::class("link")).property("color", Color::named("blue")))
+            .rule(|r| {
+                r.selector(Selector::class("btn"))
+                    .property("color", Color::named("red"))
+            })
+            .rule(|r| {
+                r.selector(Selector::class("link"))
+                    .property("color", Color::named("blue"))
+            })
             .build();
         assert!(matches!(&at, AtRule::Media { rules, .. } if rules.len() == 2));
     }
@@ -487,9 +648,15 @@ mod tests {
     #[test]
     fn builder_keyframes_with_rules() {
         let at = AtRule::keyframes("fade")
-            .rule(|r| r.selector(Selector::Universal).property("opacity", crate::css::values::Number::from(0.0)))
+            .rule(|r| {
+                r.selector(Selector::Universal)
+                    .property("opacity", crate::css::values::Number::from(0.0))
+            })
             .build();
         assert!(matches!(&at, AtRule::Keyframes { keyframes, .. } if keyframes.len() == 1));
+        // Universal selector is not a valid keyframe selector, so it
+        // falls back to the selector's string representation.
+        assert!(at.to_string().contains("*"));
     }
 
     #[test]
@@ -512,7 +679,10 @@ mod tests {
     fn builder_decl_noop_for_media() {
         // decl() called on a Media builder is a no-op (Media has no decls field).
         let at = AtRule::media("screen")
-            .decl(Declaration::new("color", crate::css::properties::Value::Number(1.0.into())))
+            .decl(Declaration::new(
+                "color",
+                crate::css::properties::Value::Number(1.0.into()),
+            ))
             .build();
         assert!(matches!(&at, AtRule::Media { rules, .. } if rules.is_empty()));
     }
@@ -529,7 +699,10 @@ mod tests {
     fn builder_decl_noop_for_keyframes_empty() {
         // decl() on Keyframes with no existing keyframe is a no-op.
         let at = AtRule::keyframes("fade")
-            .decl(Declaration::new("opacity", crate::css::properties::Value::Number(0.0.into())))
+            .decl(Declaration::new(
+                "opacity",
+                crate::css::properties::Value::Number(0.0.into()),
+            ))
             .build();
         assert!(matches!(&at, AtRule::Keyframes { keyframes, .. } if keyframes.is_empty()));
     }
@@ -538,9 +711,14 @@ mod tests {
     fn builder_rule_for_keyframes_creates_keyframe() {
         // add_rule on Keyframes creates a Keyframe from the rule's selectors.
         let at = AtRule::keyframes("fade")
-            .rule(|r| r.selector(Selector::pseudo_class("from")).property("opacity", crate::css::values::Number::from(0.0)))
+            .rule(|r| {
+                r.selector(Selector::pseudo_class("from"))
+                    .property("opacity", crate::css::values::Number::from(0.0))
+            })
             .build();
-        assert!(matches!(&at, AtRule::Keyframes { keyframes, .. } if keyframes.len() == 1 && keyframes[0].selectors.len() == 1));
+        assert!(
+            matches!(&at, AtRule::Keyframes { keyframes, .. } if keyframes.len() == 1 && keyframes[0].selectors.len() == 1)
+        );
     }
 
     #[test]
@@ -652,11 +830,22 @@ mod tests {
     #[test]
     fn builder_keyframes_with_multiple_selectors() {
         let at = AtRule::keyframes("fade")
-            .rule(|r| r.selector(Selector::Class(Cow::Borrowed("from"))).property("opacity", crate::css::values::Number::from(0.0)))
-            .rule(|r| r.selector(Selector::Class(Cow::Borrowed("to"))).property("opacity", crate::css::values::Number::from(1.0)))
+            .rule(|r| {
+                r.selector(Selector::Class(Cow::Borrowed("from")))
+                    .property("opacity", crate::css::values::Number::from(0.0))
+            })
+            .rule(|r| {
+                r.selector(Selector::Class(Cow::Borrowed("to")))
+                    .property("opacity", crate::css::values::Number::from(1.0))
+            })
             .build();
         assert!(matches!(&at, AtRule::Keyframes { keyframes, .. }
             if keyframes.len() == 2 && keyframes[0].selectors.len() == 1 && keyframes[1].selectors.len() == 1));
+        let s = at.to_string();
+        assert!(s.contains("from"));
+        assert!(!s.contains(".from"));
+        assert!(s.contains("to"));
+        assert!(!s.contains(".to"));
     }
 
     #[test]
@@ -677,7 +866,9 @@ mod tests {
 
     #[test]
     fn display_at_rule_font_face_empty() {
-        let at = AtRule::FontFace { declarations: vec![] };
+        let at = AtRule::FontFace {
+            declarations: vec![],
+        };
         assert_eq!(at.to_string(), "@font-face {}");
     }
 
@@ -696,7 +887,7 @@ mod tests {
             condition: Cow::Borrowed("display: flex"),
             rules: vec![],
         };
-        assert_eq!(at.to_string(), "@supports display: flex {}");
+        assert_eq!(at.to_string(), "@supports (display: flex) {}");
     }
 
     #[test]
@@ -714,10 +905,7 @@ mod tests {
             prefix: None,
             url: Cow::Borrowed("http://www.w3.org/2000/svg"),
         };
-        assert_eq!(
-            at.to_string(),
-            "@namespace \"http://www.w3.org/2000/svg\";"
-        );
+        assert_eq!(at.to_string(), "@namespace \"http://www.w3.org/2000/svg\";");
     }
 
     #[test]
@@ -760,20 +948,77 @@ mod tests {
     }
 
     #[test]
-    fn builder_rule_noop_for_container() {
-        // The `_ => {}` wildcard arm in add_rule for types without
-        // rule-builder support (Container, Scope, Page, Import, etc.).
-        use std::borrow::Cow;
-        let at = AtRuleBuilder {
-            at_rule: AtRule::Container {
-                name: Some(Cow::Borrowed("sidebar")),
-                query: Cow::Borrowed("inline-size"),
-                rules: vec![],
-            },
-        }
-            .rule(|r| r.selector(Selector::class("x")).property("color", Color::named("red")))
+    fn builder_rule_for_container() {
+        let at = AtRule::container_named("sidebar", "inline-size > 30ch")
+            .rule(|r| {
+                r.selector(Selector::class("x"))
+                    .property("color", Color::named("red"))
+            })
             .build();
-        assert!(at.to_string().contains("@container"));
+        let s = at.to_string();
+        assert!(s.contains("@container sidebar (inline-size > 30ch)"));
+        assert!(s.contains(".x"));
+        assert!(s.contains("color: red"));
+    }
+
+    #[test]
+    fn builder_rule_for_scope() {
+        let at = AtRule::scope_to(".card", ".content")
+            .rule(|r| {
+                r.selector(Selector::type_("h1"))
+                    .property("font-size", Length::px(24.0))
+            })
+            .build();
+        let s = at.to_string();
+        assert!(s.contains("@scope (.card) to (.content)"));
+        assert!(s.contains("h1"));
+    }
+
+    #[test]
+    fn builder_page_constructor() {
+        let at = AtRule::page_pseudo(":first")
+            .property("margin", Length::px(20.0))
+            .build();
+        let s = at.to_string();
+        assert!(s.contains("@page :first"));
+        assert!(s.contains("margin: 20px"));
+    }
+
+    #[test]
+    fn builder_layer_constructor() {
+        let at = AtRule::layer_named("utilities")
+            .rule(|r| {
+                r.selector(Selector::class("u"))
+                    .property("color", Color::named("red"))
+            })
+            .build();
+        let s = at.to_string();
+        assert!(s.contains("@layer utilities"));
+        assert!(s.contains(".u"));
+    }
+
+    #[test]
+    fn builder_at_rule_constructors_table() {
+        let cases: [(AtRule, &str); 6] = [
+            (
+                AtRule::container("inline-size > 30ch").build(),
+                "@container (inline-size > 30ch)",
+            ),
+            (
+                AtRule::container_named("sidebar", "inline-size > 30ch").build(),
+                "@container sidebar (inline-size > 30ch)",
+            ),
+            (AtRule::scope(".card").build(), "@scope (.card)"),
+            (
+                AtRule::scope_to(".card", ".content").build(),
+                "@scope (.card) to (.content)",
+            ),
+            (AtRule::page().build(), "@page {}"),
+            (AtRule::page_pseudo(":first").build(), "@page :first {}"),
+        ];
+        for (at, expected) in cases {
+            assert!(at.to_string().starts_with(expected), "got: {}", at);
+        }
     }
 
     #[test]
@@ -781,7 +1026,10 @@ mod tests {
         // decl() on Keyframes with an existing keyframe pushes to
         // its declarations, hitting the `Some(last)` branch.
         let at = AtRule::keyframes("fade")
-            .rule(|r| r.selector(Selector::pseudo_class("from")).property("opacity", crate::css::values::Number::from(0.0)))
+            .rule(|r| {
+                r.selector(Selector::pseudo_class("from"))
+                    .property("opacity", crate::css::values::Number::from(0.0))
+            })
             .decl(Declaration::new("animation-timing-function", "ease".into()))
             .build();
         assert!(matches!(&at, AtRule::Keyframes { keyframes, .. }
@@ -796,8 +1044,11 @@ mod tests {
                 rules: vec![],
             },
         }
-            .rule(|r| r.selector(Selector::class("x")).property("color", Color::named("red")))
-            .build();
+        .rule(|r| {
+            r.selector(Selector::class("x"))
+                .property("color", Color::named("red"))
+        })
+        .build();
         let s = at.to_string();
         assert!(s.contains("utilities"));
         assert!(s.contains(".x"));
@@ -812,9 +1063,30 @@ mod tests {
                 margin_boxes: vec![],
             },
         }
-            .decl(Declaration::new("margin", crate::css::properties::Value::Number(1.0.into())))
-            .build();
+        .decl(Declaration::new(
+            "margin",
+            crate::css::properties::Value::Number(1.0.into()),
+        ))
+        .build();
         let s = at.to_string();
         assert!(s.contains("margin"));
+    }
+
+    #[test]
+    fn keyframe_selector_string_conversions() {
+        use crate::css::selector::Selector;
+        let cases: [(Selector, &str); 8] = [
+            (Selector::class("from"), "from"),
+            (Selector::class("TO"), "to"),
+            (Selector::class("50%"), "50%"),
+            (Selector::class("0%"), "0%"),
+            (Selector::class("100%"), "100%"),
+            (Selector::class("middle"), ".middle"),
+            (Selector::pseudo_class("from"), "from"),
+            (Selector::pseudo_class("to"), "to"),
+        ];
+        for (sel, expected) in cases {
+            assert_eq!(keyframe_selector_string(&sel), expected);
+        }
     }
 }

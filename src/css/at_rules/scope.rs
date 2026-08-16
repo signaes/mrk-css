@@ -12,13 +12,19 @@ pub fn render(
     rules: &[RuleOrAtRule],
 ) -> fmt::Result {
     let mut s = String::from("@scope");
-    if let Some(r) = root { s.push_str(&format!(" ({})", r)); }
-    if let Some(l) = limit { s.push_str(&format!(" to ({})", l)); }
+    if let Some(r) = root {
+        s.push_str(&format!(" ({})", r));
+    }
+    if let Some(l) = limit {
+        s.push_str(&format!(" to ({})", l));
+    }
     s.push_str(" {");
     for r in rules {
         s.push_str(&format!("\n  {}", r));
     }
-    if !rules.is_empty() { s.push('\n'); }
+    if !rules.is_empty() {
+        s.push('\n');
+    }
     s.push('}');
     f.write_str(&s)
 }
@@ -102,20 +108,13 @@ mod tests {
         let mut w = W(String::new());
         std::fmt::write(
             &mut w,
-            format_args!(
-                "{}",
-                ScopeDisplay(Some(".light"), Some(".dark"), &[])
-            ),
+            format_args!("{}", ScopeDisplay(Some(".light"), Some(".dark"), &[])),
         )
         .unwrap();
         assert_eq!(w.0, "@scope (.light) to (.dark) {}");
     }
 
-    struct ScopeDisplay<'a>(
-        Option<&'a str>,
-        Option<&'a str>,
-        &'a [RuleOrAtRule],
-    );
+    struct ScopeDisplay<'a>(Option<&'a str>, Option<&'a str>, &'a [RuleOrAtRule]);
     impl<'a> fmt::Display for ScopeDisplay<'a> {
         fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
             render(f, self.0, self.1, self.2)

@@ -18,6 +18,14 @@ impl Percentage {
         Percentage(value.clamp(0.0, 100.0))
     }
 
+    /// Construct a `Percentage` without clamping.
+    ///
+    /// Useful for values inside `calc()` where percentages outside the
+    /// `[0, 100]` range are valid.
+    pub fn from_raw(value: f32) -> Self {
+        Percentage(value)
+    }
+
     /// Return the inner magnitude.
     pub fn value(self) -> f32 {
         self.0

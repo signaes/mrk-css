@@ -70,15 +70,25 @@ pub enum StepPosition {
 
 impl EasingFunction {
     /// Construct `linear`.
-    pub fn linear() -> Self { EasingFunction::Linear }
+    pub fn linear() -> Self {
+        EasingFunction::Linear
+    }
     /// Construct `ease`.
-    pub fn ease() -> Self { EasingFunction::Ease }
+    pub fn ease() -> Self {
+        EasingFunction::Ease
+    }
     /// Construct `ease-in`.
-    pub fn ease_in() -> Self { EasingFunction::EaseIn }
+    pub fn ease_in() -> Self {
+        EasingFunction::EaseIn
+    }
     /// Construct `ease-out`.
-    pub fn ease_out() -> Self { EasingFunction::EaseOut }
+    pub fn ease_out() -> Self {
+        EasingFunction::EaseOut
+    }
     /// Construct `ease-in-out`.
-    pub fn ease_in_out() -> Self { EasingFunction::EaseInOut }
+    pub fn ease_in_out() -> Self {
+        EasingFunction::EaseInOut
+    }
 
     /// Construct a `cubic-bezier(x1, y1, x2, y2)`.
     pub fn cubic_bezier(x1: f32, y1: f32, x2: f32, y2: f32) -> Self {
@@ -97,7 +107,11 @@ impl EasingFunction {
     /// Construct `steps(count, jump_term, position)` with full
     /// control.
     pub fn steps_with(count: u32, jump_term: JumpTerm, position: StepPosition) -> Self {
-        EasingFunction::Steps { count, jump_term, position }
+        EasingFunction::Steps {
+            count,
+            jump_term,
+            position,
+        }
     }
 }
 
@@ -112,7 +126,11 @@ impl fmt::Display for EasingFunction {
             EasingFunction::CubicBezier { x1, y1, x2, y2 } => {
                 write!(f, "cubic-bezier({}, {}, {}, {})", x1, y1, x2, y2)
             }
-            EasingFunction::Steps { count, jump_term, position } => {
+            EasingFunction::Steps {
+                count,
+                jump_term,
+                position,
+            } => {
                 let mut s = format!("steps({}", count);
                 match jump_term {
                     JumpTerm::JumpEnd => {}

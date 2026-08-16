@@ -1,7 +1,7 @@
 //! Pretty-printer (renderer) for CSS.
 
-use crate::css::at_rules::RuleOrAtRule;
 use crate::css::StyleSheet;
+use crate::css::at_rules::RuleOrAtRule;
 
 /// Render a [`StyleSheet`] to its canonical pretty-printed CSS form.
 pub(crate) fn render_sheet(sheet: &StyleSheet) -> String {

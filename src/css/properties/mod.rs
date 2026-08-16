@@ -8,8 +8,10 @@ use std::borrow::Cow;
 use std::fmt;
 
 use crate::css::values::{
-    named_color_srgb, Angle, Color, CssString, CustomProperty, EasingFunction, Frequency, Ident,
-    Integer, Length, Number, Percentage, Resolution, Time, Url,
+    Angle, Attr, Calc, Color, Counter, CssString, CustomProperty, EasingFunction, Env, EnvFallback,
+    Filter, FitContent, Frequency, GlobalKeyword, Ident, Integer, JumpTerm, Length, Number,
+    Percentage, Position, Ratio, Rect, RectEdge, Resolution, Shadow, Sizing, StepPosition, Time,
+    TransformFunction, Url, named_color_srgb,
 };
 
 /// A typed CSS property value.
@@ -25,10 +27,16 @@ pub enum Value {
     Length(Length),
     /// Wraps a `Percentage` value.
     Percentage(Percentage),
+    /// Wraps a `Position` value.
+    Position(Position),
+    /// Wraps a `Ratio` value.
+    Ratio(Ratio),
     /// Wraps a `Time` value.
     Time(Time),
     /// Wraps an `Angle` value.
     Angle(Angle),
+    /// Wraps an `Attr` value.
+    Attr(Attr),
     /// Wraps a `Frequency` value.
     Frequency(Frequency),
     /// Wraps a `Resolution` value.
@@ -43,10 +51,28 @@ pub enum Value {
     Url(Url),
     /// Wraps an `Ident` value.
     Identifier(Ident),
+    /// Wraps a `Counter` value.
+    Counter(Counter),
     /// Wraps a `CustomProperty` value.
     CustomProperty(CustomProperty),
     /// Wraps an `EasingFunction` value.
     EasingFunction(EasingFunction),
+    /// Wraps an `Env` value.
+    Env(Env),
+    /// Wraps a `Rect` value.
+    Rect(Rect),
+    /// Wraps a `Sizing` value.
+    Sizing(Sizing),
+    /// Wraps a `Calc` value.
+    Calc(Calc),
+    /// Wraps a `Filter` value.
+    Filter(Filter),
+    /// Wraps a `GlobalKeyword` value.
+    GlobalKeyword(GlobalKeyword),
+    /// Wraps a `TransformFunction` value.
+    Transform(TransformFunction),
+    /// Wraps a `Shadow` value.
+    Shadow(Shadow),
     /// A functional notation: `name(args...)`.
     Function {
         /// Function name.
@@ -63,46 +89,134 @@ pub enum Value {
 // ── From impls ──────────────────────────────────────────────────────
 
 impl From<Color> for Value {
-    fn from(v: Color) -> Self { Value::Color(v) }
+    fn from(v: Color) -> Self {
+        Value::Color(v)
+    }
 }
 impl From<Length> for Value {
-    fn from(v: Length) -> Self { Value::Length(v) }
+    fn from(v: Length) -> Self {
+        Value::Length(v)
+    }
 }
 impl From<Percentage> for Value {
-    fn from(v: Percentage) -> Self { Value::Percentage(v) }
+    fn from(v: Percentage) -> Self {
+        Value::Percentage(v)
+    }
+}
+impl From<Position> for Value {
+    fn from(v: Position) -> Self {
+        Value::Position(v)
+    }
+}
+impl From<Ratio> for Value {
+    fn from(v: Ratio) -> Self {
+        Value::Ratio(v)
+    }
 }
 impl From<Time> for Value {
-    fn from(v: Time) -> Self { Value::Time(v) }
+    fn from(v: Time) -> Self {
+        Value::Time(v)
+    }
 }
 impl From<Angle> for Value {
-    fn from(v: Angle) -> Self { Value::Angle(v) }
+    fn from(v: Angle) -> Self {
+        Value::Angle(v)
+    }
+}
+impl From<Attr> for Value {
+    fn from(v: Attr) -> Self {
+        Value::Attr(v)
+    }
 }
 impl From<Frequency> for Value {
-    fn from(v: Frequency) -> Self { Value::Frequency(v) }
+    fn from(v: Frequency) -> Self {
+        Value::Frequency(v)
+    }
 }
 impl From<Resolution> for Value {
-    fn from(v: Resolution) -> Self { Value::Resolution(v) }
+    fn from(v: Resolution) -> Self {
+        Value::Resolution(v)
+    }
 }
 impl From<Number> for Value {
-    fn from(v: Number) -> Self { Value::Number(v) }
+    fn from(v: Number) -> Self {
+        Value::Number(v)
+    }
 }
 impl From<Integer> for Value {
-    fn from(v: Integer) -> Self { Value::Integer(v) }
+    fn from(v: Integer) -> Self {
+        Value::Integer(v)
+    }
 }
 impl From<CssString> for Value {
-    fn from(v: CssString) -> Self { Value::String(v) }
+    fn from(v: CssString) -> Self {
+        Value::String(v)
+    }
 }
 impl From<Url> for Value {
-    fn from(v: Url) -> Self { Value::Url(v) }
+    fn from(v: Url) -> Self {
+        Value::Url(v)
+    }
 }
 impl From<Ident> for Value {
-    fn from(v: Ident) -> Self { Value::Identifier(v) }
+    fn from(v: Ident) -> Self {
+        Value::Identifier(v)
+    }
+}
+impl From<Counter> for Value {
+    fn from(v: Counter) -> Self {
+        Value::Counter(v)
+    }
 }
 impl From<CustomProperty> for Value {
-    fn from(v: CustomProperty) -> Self { Value::CustomProperty(v) }
+    fn from(v: CustomProperty) -> Self {
+        Value::CustomProperty(v)
+    }
 }
 impl From<EasingFunction> for Value {
-    fn from(v: EasingFunction) -> Self { Value::EasingFunction(v) }
+    fn from(v: EasingFunction) -> Self {
+        Value::EasingFunction(v)
+    }
+}
+impl From<Env> for Value {
+    fn from(v: Env) -> Self {
+        Value::Env(v)
+    }
+}
+impl From<Rect> for Value {
+    fn from(v: Rect) -> Self {
+        Value::Rect(v)
+    }
+}
+impl From<Sizing> for Value {
+    fn from(v: Sizing) -> Self {
+        Value::Sizing(v)
+    }
+}
+impl From<Calc> for Value {
+    fn from(v: Calc) -> Self {
+        Value::Calc(v)
+    }
+}
+impl From<Filter> for Value {
+    fn from(v: Filter) -> Self {
+        Value::Filter(v)
+    }
+}
+impl From<GlobalKeyword> for Value {
+    fn from(v: GlobalKeyword) -> Self {
+        Value::GlobalKeyword(v)
+    }
+}
+impl From<TransformFunction> for Value {
+    fn from(v: TransformFunction) -> Self {
+        Value::Transform(v)
+    }
+}
+impl From<Shadow> for Value {
+    fn from(v: Shadow) -> Self {
+        Value::Shadow(v)
+    }
 }
 
 impl From<&'static str> for Value {
@@ -111,13 +225,19 @@ impl From<&'static str> for Value {
     }
 }
 impl From<f32> for Value {
-    fn from(v: f32) -> Self { Value::Number(v.into()) }
+    fn from(v: f32) -> Self {
+        Value::Number(v.into())
+    }
 }
 impl From<f64> for Value {
-    fn from(v: f64) -> Self { Value::Number(v.into()) }
+    fn from(v: f64) -> Self {
+        Value::Number(v.into())
+    }
 }
 impl From<i32> for Value {
-    fn from(v: i32) -> Self { Value::Integer(v.into()) }
+    fn from(v: i32) -> Self {
+        Value::Integer(v.into())
+    }
 }
 impl From<String> for Value {
     fn from(s: String) -> Self {
@@ -133,8 +253,11 @@ impl fmt::Display for Value {
             Value::Color(v) => fmt::Display::fmt(v, f),
             Value::Length(v) => fmt::Display::fmt(v, f),
             Value::Percentage(v) => fmt::Display::fmt(v, f),
+            Value::Position(v) => fmt::Display::fmt(v, f),
+            Value::Ratio(v) => fmt::Display::fmt(v, f),
             Value::Time(v) => fmt::Display::fmt(v, f),
             Value::Angle(v) => fmt::Display::fmt(v, f),
+            Value::Attr(v) => fmt::Display::fmt(v, f),
             Value::Frequency(v) => fmt::Display::fmt(v, f),
             Value::Resolution(v) => fmt::Display::fmt(v, f),
             Value::Number(v) => fmt::Display::fmt(v, f),
@@ -142,13 +265,24 @@ impl fmt::Display for Value {
             Value::String(v) => fmt::Display::fmt(v, f),
             Value::Url(v) => fmt::Display::fmt(v, f),
             Value::Identifier(v) => fmt::Display::fmt(v, f),
+            Value::Counter(v) => fmt::Display::fmt(v, f),
             Value::CustomProperty(v) => fmt::Display::fmt(v, f),
             Value::EasingFunction(v) => fmt::Display::fmt(v, f),
+            Value::Env(v) => fmt::Display::fmt(v, f),
+            Value::Rect(v) => fmt::Display::fmt(v, f),
+            Value::Sizing(v) => fmt::Display::fmt(v, f),
+            Value::Calc(v) => fmt::Display::fmt(v, f),
+            Value::Filter(v) => fmt::Display::fmt(v, f),
+            Value::GlobalKeyword(v) => fmt::Display::fmt(v, f),
+            Value::Transform(v) => fmt::Display::fmt(v, f),
+            Value::Shadow(v) => fmt::Display::fmt(v, f),
             Value::Function { name, args } => {
                 let mut s = String::from(name.as_ref());
                 s.push('(');
                 for (i, arg) in args.iter().enumerate() {
-                    if i > 0 { s.push_str(", "); }
+                    if i > 0 {
+                        s.push_str(", ");
+                    }
                     s.push_str(&arg.to_string());
                 }
                 s.push(')');
@@ -157,7 +291,9 @@ impl fmt::Display for Value {
             Value::List(items) => {
                 let mut s = String::new();
                 for (i, item) in items.iter().enumerate() {
-                    if i > 0 { s.push(' '); }
+                    if i > 0 {
+                        s.push(' ');
+                    }
                     s.push_str(&item.to_string());
                 }
                 f.write_str(&s)
@@ -186,7 +322,10 @@ impl Value {
 /// 4. Bare integers: `0`, `42`
 /// 5. Bare floats: `1.5`, `-1.5`
 /// 6. Named colors: `red`, `blue`, `rebeccapurple`, … (148 entries)
-/// 7. Anything else: wrapped as `Value::Identifier`
+/// 7. Easing keywords: `linear`, `ease`, `ease-in`, `ease-out`, `ease-in-out`
+/// 8. Sizing keywords: `min-content`, `max-content`, `stretch`
+/// 9. Global keywords: `initial`, `inherit`, `unset`, `revert`
+/// 10. Anything else: wrapped as `Value::Identifier`
 ///
 /// Whitespace around the input is trimmed. Empty / whitespace-only
 /// input becomes `Value::Raw("")`.
@@ -211,8 +350,23 @@ pub(crate) fn parse_value(s: &str) -> Value {
     }
 
     // Hex color: #fff or #ff0000.
-    if let Some(c) = s.strip_prefix('#').and_then(|hex| Color::hex(&format!("#{hex}"))) {
+    if let Some(c) = s
+        .strip_prefix('#')
+        .and_then(|hex| Color::hex(&format!("#{hex}")))
+    {
         return Value::Color(c);
+    }
+
+    // Ratio: `<number> / <number>` (e.g. `16/9` or `16 / 9`).
+    if let Some(slash) = s.find('/') {
+        let num_str = s[..slash].trim();
+        let den_str = s[slash + 1..].trim();
+        if let (Ok(num), Ok(den)) = (num_str.parse::<f32>(), den_str.parse::<f32>())
+            && num >= 0.0
+            && den > 0.0
+        {
+            return Value::Ratio(Ratio::new(num, den));
+        }
     }
 
     // Number + unit (glued like "8px" or split like "8 px").
@@ -228,6 +382,21 @@ pub(crate) fn parse_value(s: &str) -> Value {
     // Bare signed float (catches -1.5, 1.5, etc.).
     if let Ok(n) = s.parse::<f32>() {
         return Value::Number(Number::from(n));
+    }
+
+    // CSS easing keywords.
+    if let Some(easing) = try_easing_keyword(s) {
+        return Value::EasingFunction(easing);
+    }
+
+    // CSS sizing keywords.
+    if let Some(sizing) = try_sizing_keyword(s) {
+        return Value::Sizing(sizing);
+    }
+
+    // CSS global keywords.
+    if let Some(kw) = try_global_keyword(s) {
+        return Value::GlobalKeyword(kw);
     }
 
     // Named CSS color (148 entries).
@@ -384,10 +553,40 @@ fn unit_to_value(n: f32, unit: &str) -> Value {
         "rem" => Value::Length(Length::rem(n)),
         "ex" => Value::Length(Length::ex(n)),
         "ch" => Value::Length(Length::ch(n)),
+        "cap" => Value::Length(Length::cap(n)),
+        "rcap" => Value::Length(Length::rcap(n)),
+        "lh" => Value::Length(Length::lh(n)),
+        "rlh" => Value::Length(Length::rlh(n)),
         "vw" => Value::Length(Length::vw(n)),
         "vh" => Value::Length(Length::vh(n)),
         "vmin" => Value::Length(Length::vmin(n)),
         "vmax" => Value::Length(Length::vmax(n)),
+        "vi" => Value::Length(Length::vi(n)),
+        "vb" => Value::Length(Length::vb(n)),
+        "svw" => Value::Length(Length::svw(n)),
+        "svh" => Value::Length(Length::svh(n)),
+        "svmin" => Value::Length(Length::svmin(n)),
+        "svmax" => Value::Length(Length::svmax(n)),
+        "svi" => Value::Length(Length::svi(n)),
+        "svb" => Value::Length(Length::svb(n)),
+        "lvw" => Value::Length(Length::lvw(n)),
+        "lvh" => Value::Length(Length::lvh(n)),
+        "lvmin" => Value::Length(Length::lvmin(n)),
+        "lvmax" => Value::Length(Length::lvmax(n)),
+        "lvi" => Value::Length(Length::lvi(n)),
+        "lvb" => Value::Length(Length::lvb(n)),
+        "dvw" => Value::Length(Length::dvw(n)),
+        "dvh" => Value::Length(Length::dvh(n)),
+        "dvmin" => Value::Length(Length::dvmin(n)),
+        "dvmax" => Value::Length(Length::dvmax(n)),
+        "dvi" => Value::Length(Length::dvi(n)),
+        "dvb" => Value::Length(Length::dvb(n)),
+        "cqw" => Value::Length(Length::cqw(n)),
+        "cqh" => Value::Length(Length::cqh(n)),
+        "cqi" => Value::Length(Length::cqi(n)),
+        "cqb" => Value::Length(Length::cqb(n)),
+        "cqmin" => Value::Length(Length::cqmin(n)),
+        "cqmax" => Value::Length(Length::cqmax(n)),
         "cm" => Value::Length(Length::cm(n)),
         "mm" => Value::Length(Length::mm(n)),
         "in" => Value::Length(Length::inches(n)),
@@ -436,17 +635,86 @@ fn split_function_call(s: &str) -> Option<(&str, &str)> {
 
 /// Build a [`Value`] from a parsed function call.
 fn parse_function_value(name: &str, args_str: &str) -> Value {
+    // CSS Color 4 functional notations: rgb, hsl, hwb, lab, lch,
+    // oklab, oklch, color, color-mix, color-contrast, device-cmyk,
+    // light-dark. Parse them through the full color parser so modern
+    // space-separated syntax, alpha slashes, and missing components
+    // are handled consistently.
+    const COLOR_FNS: &[&str] = &[
+        "rgb",
+        "rgba",
+        "hsl",
+        "hsla",
+        "hwb",
+        "lab",
+        "lch",
+        "oklab",
+        "oklch",
+        "color",
+        "color-mix",
+        "color-contrast",
+        "device-cmyk",
+        "light-dark",
+    ];
+    if COLOR_FNS.iter().any(|&c| c.eq_ignore_ascii_case(name)) {
+        let full = format!("{name}({args_str})");
+        if let Ok(color) = Color::parse(&full) {
+            return Value::Color(color);
+        }
+    }
+
     // Function arguments are comma-separated (CSS spec). Each
     // argument may itself be a space-separated list, e.g. modern
     // color notation `hsl(120 50% 50%)`.
     let arg_vec: Vec<Value> = if args_str.trim().is_empty() {
         Vec::new()
     } else {
-        args_str.split(',').map(|a| parse_value_list(a.trim())).collect()
+        args_str
+            .split(',')
+            .map(|a| parse_value_list(a.trim()))
+            .collect()
     };
 
     if let Some(color) = try_color_factory(name, &arg_vec) {
         return Value::Color(color);
+    }
+
+    if let Some(counter) = try_counter_factory(name, &arg_vec) {
+        return Value::Counter(counter);
+    }
+
+    if let Some(attr) = try_attr_factory(name, &arg_vec) {
+        return Value::Attr(attr);
+    }
+
+    if let Some(easing) = try_easing_factory(name, &arg_vec) {
+        return Value::EasingFunction(easing);
+    }
+
+    if let Some(env) = try_env_factory(name, &arg_vec) {
+        return Value::Env(env);
+    }
+
+    if let Some(rect) = try_rect_factory(name, &arg_vec) {
+        return Value::Rect(rect);
+    }
+
+    if let Some(sizing) = try_sizing_factory(name, &arg_vec) {
+        return Value::Sizing(sizing);
+    }
+
+    // calc(), min(), max(), clamp() — parse the raw argument string as
+    // math expressions.
+    if let Some(calc) = Calc::parse_function(name, args_str) {
+        return Value::Calc(calc);
+    }
+
+    if let Some(filter) = try_filter_factory(name, &arg_vec) {
+        return Value::Filter(filter);
+    }
+
+    if let Some(transform) = try_transform_factory(name, &arg_vec) {
+        return Value::Transform(transform);
     }
 
     // url(s) — strip quotes.
@@ -472,6 +740,313 @@ fn parse_function_value(name: &str, args_str: &str) -> Value {
     }
 }
 
+/// Try to parse a bare CSS easing keyword (`linear`, `ease`, ...).
+fn try_easing_keyword(s: &str) -> Option<EasingFunction> {
+    match s.to_ascii_lowercase().as_str() {
+        "linear" => Some(EasingFunction::Linear),
+        "ease" => Some(EasingFunction::Ease),
+        "ease-in" => Some(EasingFunction::EaseIn),
+        "ease-out" => Some(EasingFunction::EaseOut),
+        "ease-in-out" => Some(EasingFunction::EaseInOut),
+        _ => None,
+    }
+}
+
+/// Try to construct an [`EasingFunction`] from `cubic-bezier()` or
+/// `steps()`.
+fn try_easing_factory(name: &str, args: &[Value]) -> Option<EasingFunction> {
+    let name = name.to_ascii_lowercase();
+
+    if name == "cubic-bezier" {
+        let flat: Vec<&Value> = args
+            .iter()
+            .flat_map(|v| match v {
+                Value::List(items) => items.iter().collect::<Vec<_>>(),
+                other => vec![other],
+            })
+            .collect();
+        if flat.len() != 4 {
+            return None;
+        }
+        let coords: Vec<f32> = flat
+            .iter()
+            .filter_map(|v| match v {
+                Value::Number(n) => Some(n.value()),
+                Value::Integer(i) => Some(i.value() as f32),
+                _ => None,
+            })
+            .collect();
+        if coords.len() != 4 {
+            return None;
+        }
+        return Some(EasingFunction::cubic_bezier(
+            coords[0], coords[1], coords[2], coords[3],
+        ));
+    }
+
+    if name == "steps" {
+        let flat: Vec<&Value> = args
+            .iter()
+            .flat_map(|v| match v {
+                Value::List(items) => items.iter().collect::<Vec<_>>(),
+                other => vec![other],
+            })
+            .collect();
+        let count = match flat.first()? {
+            Value::Integer(i) => i.value().max(0) as u32,
+            Value::Number(n) => n.value().max(0.0) as u32,
+            _ => return None,
+        };
+
+        let mut jump_term = JumpTerm::JumpEnd;
+        let mut position = StepPosition::End;
+        for arg in flat.iter().skip(1) {
+            match arg {
+                Value::Identifier(ident) => match ident.to_string().to_ascii_lowercase().as_str() {
+                    "jump-end" => jump_term = JumpTerm::JumpEnd,
+                    "jump-start" => jump_term = JumpTerm::JumpStart,
+                    "jump-none" => jump_term = JumpTerm::JumpNone,
+                    "jump-both" => jump_term = JumpTerm::JumpBoth,
+                    "start" => position = StepPosition::Start,
+                    "end" => position = StepPosition::End,
+                    _ => return None,
+                },
+                _ => return None,
+            }
+        }
+        return Some(EasingFunction::Steps {
+            count,
+            jump_term,
+            position,
+        });
+    }
+
+    None
+}
+
+/// Try to parse a bare CSS sizing keyword (`min-content`, `max-content`,
+/// `stretch`).
+fn try_sizing_keyword(s: &str) -> Option<Sizing> {
+    match s.to_ascii_lowercase().as_str() {
+        "min-content" => Some(Sizing::MinContent),
+        "max-content" => Some(Sizing::MaxContent),
+        "stretch" => Some(Sizing::Stretch),
+        _ => None,
+    }
+}
+
+/// Try to parse a bare CSS global keyword (`initial`, `inherit`, `unset`,
+/// `revert`).
+fn try_global_keyword(s: &str) -> Option<GlobalKeyword> {
+    match s.to_ascii_lowercase().as_str() {
+        "initial" => Some(GlobalKeyword::Initial),
+        "inherit" => Some(GlobalKeyword::Inherit),
+        "unset" => Some(GlobalKeyword::Unset),
+        "revert" => Some(GlobalKeyword::Revert),
+        _ => None,
+    }
+}
+
+/// Try to construct a [`Sizing`] from `fit-content()`.
+fn try_sizing_factory(name: &str, args: &[Value]) -> Option<Sizing> {
+    if !name.eq_ignore_ascii_case("fit-content") {
+        return None;
+    }
+    let flat: Vec<&Value> = args
+        .iter()
+        .flat_map(|v| match v {
+            Value::List(items) => items.iter().collect::<Vec<_>>(),
+            other => vec![other],
+        })
+        .collect();
+    match flat.as_slice() {
+        [Value::Length(l)] => Some(Sizing::FitContent(FitContent::Length(*l))),
+        [Value::Percentage(p)] => Some(Sizing::FitContent(FitContent::Percentage(*p))),
+        _ => None,
+    }
+}
+
+/// Try to construct a [`Filter`] from a known filter function name and
+/// already-parsed argument values.
+fn try_filter_factory(name: &str, args: &[Value]) -> Option<Filter> {
+    let name = name.to_ascii_lowercase();
+    let flat: Vec<&Value> = args
+        .iter()
+        .flat_map(|v| match v {
+            Value::List(items) => items.iter().collect::<Vec<_>>(),
+            other => vec![other],
+        })
+        .collect();
+
+    fn parse_drop_shadow(values: &[&Value]) -> Option<Filter> {
+        match values {
+            [Value::Length(x), Value::Length(y)] => Some(Filter::DropShadow(Shadow::new(*x, *y))),
+            [Value::Length(x), Value::Length(y), Value::Length(b)] => {
+                Some(Filter::DropShadow(Shadow::new(*x, *y).blur(*b)))
+            }
+            [Value::Length(x), Value::Length(y), Value::Color(c)] => {
+                Some(Filter::DropShadow(Shadow::new(*x, *y).color(c.clone())))
+            }
+            [
+                Value::Length(x),
+                Value::Length(y),
+                Value::Length(b),
+                Value::Color(c),
+            ] => Some(Filter::DropShadow(
+                Shadow::new(*x, *y).blur(*b).color(c.clone()),
+            )),
+            _ => None,
+        }
+    }
+
+    match name.as_str() {
+        "blur" => match flat.as_slice() {
+            [Value::Length(l)] => Some(Filter::Blur(*l)),
+            _ => None,
+        },
+        "brightness" => match flat.first() {
+            Some(Value::Number(n)) => Some(Filter::Brightness(*n)),
+            Some(Value::Integer(i)) => Some(Filter::Brightness(Number::from(i.value() as f32))),
+            _ => None,
+        },
+        "contrast" => match flat.first() {
+            Some(Value::Number(n)) => Some(Filter::Contrast(*n)),
+            Some(Value::Integer(i)) => Some(Filter::Contrast(Number::from(i.value() as f32))),
+            _ => None,
+        },
+        "grayscale" => match flat.first() {
+            Some(Value::Number(n)) => Some(Filter::Grayscale(*n)),
+            Some(Value::Integer(i)) => Some(Filter::Grayscale(Number::from(i.value() as f32))),
+            _ => None,
+        },
+        "hue-rotate" => match flat.as_slice() {
+            [Value::Angle(a)] => Some(Filter::HueRotate(*a)),
+            _ => None,
+        },
+        "invert" => match flat.first() {
+            Some(Value::Number(n)) => Some(Filter::Invert(*n)),
+            Some(Value::Integer(i)) => Some(Filter::Invert(Number::from(i.value() as f32))),
+            _ => None,
+        },
+        "opacity" => match flat.first() {
+            Some(Value::Number(n)) => Some(Filter::Opacity(*n)),
+            Some(Value::Integer(i)) => Some(Filter::Opacity(Number::from(i.value() as f32))),
+            _ => None,
+        },
+        "saturate" => match flat.first() {
+            Some(Value::Number(n)) => Some(Filter::Saturate(*n)),
+            Some(Value::Integer(i)) => Some(Filter::Saturate(Number::from(i.value() as f32))),
+            _ => None,
+        },
+        "sepia" => match flat.first() {
+            Some(Value::Number(n)) => Some(Filter::Sepia(*n)),
+            Some(Value::Integer(i)) => Some(Filter::Sepia(Number::from(i.value() as f32))),
+            _ => None,
+        },
+        "drop-shadow" => parse_drop_shadow(&flat),
+        _ => None,
+    }
+}
+
+/// Try to construct a [`TransformFunction`] from a known transform
+/// function name and already-parsed argument values.
+fn try_transform_factory(name: &str, args: &[Value]) -> Option<TransformFunction> {
+    let name = name.to_ascii_lowercase();
+    let flat: Vec<&Value> = args
+        .iter()
+        .flat_map(|v| match v {
+            Value::List(items) => items.iter().collect::<Vec<_>>(),
+            other => vec![other],
+        })
+        .collect();
+
+    fn number(v: &Value) -> Option<f32> {
+        match v {
+            Value::Number(n) => Some(n.value()),
+            Value::Integer(i) => Some(i.value() as f32),
+            _ => None,
+        }
+    }
+
+    match name.as_str() {
+        "translatex" => match flat.as_slice() {
+            [Value::Length(l)] => Some(TransformFunction::TranslateX(*l)),
+            _ => None,
+        },
+        "translatey" => match flat.as_slice() {
+            [Value::Length(l)] => Some(TransformFunction::TranslateY(*l)),
+            _ => None,
+        },
+        "translatez" => match flat.as_slice() {
+            [Value::Length(l)] => Some(TransformFunction::TranslateZ(*l)),
+            _ => None,
+        },
+        "translate" => match flat.as_slice() {
+            [Value::Length(x), Value::Length(y)] => Some(TransformFunction::Translate(*x, *y)),
+            _ => None,
+        },
+        "translate3d" => match flat.as_slice() {
+            [Value::Length(x), Value::Length(y), Value::Length(z)] => {
+                Some(TransformFunction::Translate3d(*x, *y, *z))
+            }
+            _ => None,
+        },
+        "scale" => match flat.as_slice() {
+            [v] => number(v).map(|s| TransformFunction::Scale(s, s)),
+            [x, y] => number(x).and_then(|x| number(y).map(|y| TransformFunction::Scale(x, y))),
+            _ => None,
+        },
+        "scalex" => match flat.first() {
+            Some(v) => number(v).map(TransformFunction::ScaleX),
+            _ => None,
+        },
+        "scaley" => match flat.first() {
+            Some(v) => number(v).map(TransformFunction::ScaleY),
+            _ => None,
+        },
+        "scalez" => match flat.first() {
+            Some(v) => number(v).map(TransformFunction::ScaleZ),
+            _ => None,
+        },
+        "scale3d" => match flat.as_slice() {
+            [x, y, z] => number(x)
+                .zip(number(y))
+                .zip(number(z))
+                .map(|((x, y), z)| TransformFunction::Scale3d(x, y, z)),
+            _ => None,
+        },
+        "rotate" => match flat.as_slice() {
+            [Value::Angle(a)] => Some(TransformFunction::Rotate(*a)),
+            _ => None,
+        },
+        "rotatex" => match flat.as_slice() {
+            [Value::Angle(a)] => Some(TransformFunction::RotateX(*a)),
+            _ => None,
+        },
+        "rotatey" => match flat.as_slice() {
+            [Value::Angle(a)] => Some(TransformFunction::RotateY(*a)),
+            _ => None,
+        },
+        "rotatez" => match flat.as_slice() {
+            [Value::Angle(a)] => Some(TransformFunction::RotateZ(*a)),
+            _ => None,
+        },
+        "skew" => match flat.as_slice() {
+            [Value::Angle(x), Value::Angle(y)] => Some(TransformFunction::Skew(*x, *y)),
+            _ => None,
+        },
+        "skewx" => match flat.as_slice() {
+            [Value::Angle(a)] => Some(TransformFunction::SkewX(*a)),
+            _ => None,
+        },
+        "skewy" => match flat.as_slice() {
+            [Value::Angle(a)] => Some(TransformFunction::SkewY(*a)),
+            _ => None,
+        },
+        _ => None,
+    }
+}
+
 /// Try to construct a [`Color`] from a known Color factory name and
 /// already-parsed argument values.
 fn try_color_factory(name: &str, args: &[Value]) -> Option<Color> {
@@ -485,13 +1060,159 @@ fn try_color_factory(name: &str, args: &[Value]) -> Option<Color> {
         })
         .collect();
 
-    match (name, floats.as_slice()) {
-        ("rgb", [r, g, b]) => Some(Color::rgb(r.clamp(0.0, 255.0) as u8, g.clamp(0.0, 255.0) as u8, b.clamp(0.0, 255.0) as u8)),
-        ("rgba", [r, g, b, a]) => Some(Color::rgba(r.clamp(0.0, 255.0) as u8, g.clamp(0.0, 255.0) as u8, b.clamp(0.0, 255.0) as u8, *a)),
+    match (name.to_ascii_lowercase().as_str(), floats.as_slice()) {
+        ("rgb", [r, g, b]) => Some(Color::rgb(
+            r.clamp(0.0, 255.0) as u8,
+            g.clamp(0.0, 255.0) as u8,
+            b.clamp(0.0, 255.0) as u8,
+        )),
+        ("rgba", [r, g, b, a]) => Some(Color::rgba(
+            r.clamp(0.0, 255.0) as u8,
+            g.clamp(0.0, 255.0) as u8,
+            b.clamp(0.0, 255.0) as u8,
+            *a,
+        )),
         ("hsl", [h, s, l]) => Some(Color::hsl(*h, *s, *l)),
         ("hsla", [h, s, l, a]) => Some(Color::hsla(*h, *s, *l, *a)),
         _ => None,
     }
+}
+
+/// Try to construct a [`Counter`] from `counter()` or `counters()`.
+fn try_counter_factory(name: &str, args: &[Value]) -> Option<Counter> {
+    let name = name.to_ascii_lowercase();
+    if name == "counter" {
+        match args {
+            [Value::Identifier(n)] => Some(Counter::single(n.clone())),
+            [Value::Identifier(n), Value::Identifier(s)] => {
+                Some(Counter::single_with_style(n.clone(), s.clone()))
+            }
+            _ => None,
+        }
+    } else if name == "counters" {
+        match args {
+            [Value::Identifier(n), Value::String(sep)] => {
+                Some(Counter::counters(n.clone(), sep.clone()))
+            }
+            [
+                Value::Identifier(n),
+                Value::String(sep),
+                Value::Identifier(s),
+            ] => Some(Counter::counters_with_style(
+                n.clone(),
+                sep.clone(),
+                s.clone(),
+            )),
+            _ => None,
+        }
+    } else {
+        None
+    }
+}
+
+/// Try to construct an [`Attr`] from `attr()`.
+fn try_attr_factory(name: &str, args: &[Value]) -> Option<Attr> {
+    if !name.eq_ignore_ascii_case("attr") {
+        return None;
+    }
+    // Flatten any `Value::List` items produced by space-separated syntax
+    // so that `attr(name type)`, `attr(name type, fallback)` and the
+    // modern space-separated forms are all handled uniformly.
+    let flat: Vec<&Value> = args
+        .iter()
+        .flat_map(|v| match v {
+            Value::List(items) => items.iter().collect::<Vec<_>>(),
+            other => vec![other],
+        })
+        .collect();
+    match flat.as_slice() {
+        [Value::Identifier(n)] => Some(Attr::new(n.clone())),
+        [Value::Identifier(n), Value::Identifier(t)] => Some(Attr::with_type(n.clone(), t.clone())),
+        [
+            Value::Identifier(n),
+            Value::Identifier(t),
+            Value::String(fb),
+        ] => Some(Attr::with_fallback(n.clone(), t.clone(), fb.clone())),
+        [
+            Value::Identifier(n),
+            Value::Identifier(t),
+            Value::Number(fb),
+        ] => Some(Attr::with_fallback(n.clone(), t.clone(), *fb)),
+        [
+            Value::Identifier(n),
+            Value::Identifier(t),
+            Value::Integer(fb),
+        ] => Some(Attr::with_fallback(n.clone(), t.clone(), *fb)),
+        _ => None,
+    }
+}
+
+/// Try to construct an [`Env`] from `env()`.
+fn try_env_factory(name: &str, args: &[Value]) -> Option<Env> {
+    if !name.eq_ignore_ascii_case("env") {
+        return None;
+    }
+    // Flatten any `Value::List` items so space-separated arguments are
+    // handled uniformly with comma-separated ones.
+    let flat: Vec<&Value> = args
+        .iter()
+        .flat_map(|v| match v {
+            Value::List(items) => items.iter().collect::<Vec<_>>(),
+            other => vec![other],
+        })
+        .collect();
+    match flat.as_slice() {
+        [Value::Identifier(n)] => Some(Env::new(n.clone())),
+        [Value::Identifier(n), fb] => {
+            let fallback = match fb {
+                Value::String(s) => EnvFallback::String(s.clone()),
+                Value::Number(n) => EnvFallback::Number(*n),
+                Value::Integer(i) => EnvFallback::Integer(*i),
+                Value::Length(l) => EnvFallback::Length(*l),
+                _ => return None,
+            };
+            Some(Env::with_fallback(n.clone(), fallback))
+        }
+        _ => None,
+    }
+}
+
+/// Try to construct a [`Rect`] from `rect()`.
+fn try_rect_factory(name: &str, args: &[Value]) -> Option<Rect> {
+    if !name.eq_ignore_ascii_case("rect") {
+        return None;
+    }
+    // Flatten any `Value::List` items so both comma-separated
+    // (`rect(0, 10px, 20px, 30px)`) and space-separated
+    // (`rect(0 10px 20px 30px)`) syntax work.
+    let flat: Vec<&Value> = args
+        .iter()
+        .flat_map(|v| match v {
+            Value::List(items) => items.iter().collect::<Vec<_>>(),
+            other => vec![other],
+        })
+        .collect();
+    if flat.len() != 4 {
+        return None;
+    }
+
+    fn parse_edge(v: &Value) -> Option<RectEdge> {
+        match v {
+            Value::Identifier(ident) if ident.to_string().eq_ignore_ascii_case("auto") => {
+                Some(RectEdge::Auto)
+            }
+            Value::Length(l) => Some(RectEdge::Length(*l)),
+            Value::Integer(i) if i.value() == 0 => Some(RectEdge::Length(Length::px(0.0))),
+            Value::Number(n) if n.value() == 0.0 => Some(RectEdge::Length(Length::px(0.0))),
+            _ => None,
+        }
+    }
+
+    let top = parse_edge(flat[0])?;
+    let right = parse_edge(flat[1])?;
+    let bottom = parse_edge(flat[2])?;
+    let left = parse_edge(flat[3])?;
+    Some(Rect::new(top, right, bottom, left))
 }
 
 /// Parse a `var(--name)` or `var(--name, fallback)` argument string.
@@ -620,6 +1341,7 @@ macro_rules! define_property {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::css::values::PositionKeyword;
 
     #[test]
     fn value_from_color() {
@@ -703,6 +1425,16 @@ mod tests {
     fn value_from_easing() {
         let v: Value = EasingFunction::Ease.into();
         assert!(format!("{:?}", v).contains("EasingFunction("));
+    }
+
+    #[test]
+    fn value_from_shadow() {
+        let v: Value = Shadow::new(Length::px(2.0), Length::px(2.0))
+            .blur(Length::px(4.0))
+            .color(Color::named("red"))
+            .into();
+        assert!(format!("{:?}", v).contains("Shadow("));
+        assert_eq!(v.to_string(), "2px 2px 4px red");
     }
 
     #[test]
@@ -954,7 +1686,10 @@ mod tests {
         // `Percentage` clamps them — keep them verbatim instead.
         assert_eq!(parse_value("-50%").to_string(), "-50%");
         assert_eq!(parse_value("150%").to_string(), "150%");
-        assert_eq!(parse_value("translate(-50%, -8px)").to_string(), "translate(-50%, -8px)");
+        assert_eq!(
+            parse_value("translate(-50%, -8px)").to_string(),
+            "translate(-50%, -8px)"
+        );
     }
 
     #[test]
@@ -1034,6 +1769,513 @@ mod tests {
     }
 
     #[test]
+    fn parse_value_modern_color_functions() {
+        // hwb/lab/lch/oklab/oklch/color/color-mix/light-dark should
+        // all be typed as Value::Color, not Value::Function.
+        let cases: [(&str, &str); 12] = [
+            ("hwb(120 30% 20%)", "hwb(120 30% 20%)"),
+            ("lab(50% 20 -10)", "lab(50% 20 -10)"),
+            ("lch(50% 30 180)", "lch(50% 30 180deg)"),
+            ("oklab(50% 0.2 -0.1)", "oklab(50% 0.2 -0.1)"),
+            ("oklch(50% 0.2 180)", "oklch(50% 0.2 180deg)"),
+            ("color(display-p3 1 0 0)", "color(display-p3 1 0 0)"),
+            (
+                "color-mix(in srgb, red, blue)",
+                "color-mix(in srgb, red, blue 50%)",
+            ),
+            ("light-dark(red, blue)", "light-dark(red, blue)"),
+            // Modern space-separated rgb/hsl with alpha slash.
+            ("rgb(255 0 0 / 0.5)", "rgba(255, 0, 0, 0.5)"),
+            ("hsl(120 50% 50% / 0.5)", "hsla(120, 50%, 50%, 0.5)"),
+            // Legacy comma syntax still works.
+            ("rgb(255, 0, 0)", "rgb(255, 0, 0)"),
+            ("hsl(120, 50%, 50%)", "hsl(120, 50%, 50%)"),
+        ];
+        for (input, expected_display) in cases {
+            let v = parse_value(input);
+            assert!(
+                matches!(v, Value::Color(_)),
+                "{input} should be Value::Color, got {v:?}"
+            );
+            assert_eq!(
+                v.to_string(),
+                expected_display,
+                "display mismatch for {input}"
+            );
+        }
+    }
+
+    #[test]
+    fn parse_value_non_color_functions_stay_functions() {
+        // Generic functions must not be swallowed by the color parser.
+        // `calc()`, `min()`, `max()`, and `clamp()` are now typed, so they
+        // are intentionally absent here.
+        let cases: [&str; 2] = ["url(img.png)", "var(--x)"];
+        for input in cases {
+            let v = parse_value(input);
+            assert!(
+                matches!(v, Value::Function { .. } | Value::Url(_)),
+                "{input} should stay a generic function, got {v:?}"
+            );
+        }
+    }
+
+    #[test]
+    fn parse_value_color_function_names_case_insensitive() {
+        let cases: [(&str, &str); 8] = [
+            ("RGB(255, 0, 0)", "rgb(255, 0, 0)"),
+            ("Hsl(120, 50%, 50%)", "hsl(120, 50%, 50%)"),
+            ("HWB(120 30% 20%)", "hwb(120 30% 20%)"),
+            ("Lab(50% 20 -10)", "lab(50% 20 -10)"),
+            ("LCH(50% 30 180)", "lch(50% 30 180deg)"),
+            ("OKLab(50% 0.2 -0.1)", "oklab(50% 0.2 -0.1)"),
+            ("OKLCH(50% 0.2 180)", "oklch(50% 0.2 180deg)"),
+            ("Color(srgb 1 0 0)", "color(srgb 1 0 0)"),
+        ];
+        for (input, expected) in cases {
+            let v = parse_value(input);
+            assert!(
+                matches!(v, Value::Color(_)),
+                "{input} should be Value::Color"
+            );
+            assert_eq!(v.to_string(), expected, "display mismatch for {input}");
+        }
+    }
+
+    #[test]
+    fn parse_value_counter_functions() {
+        let cases: [(&str, &str); 4] = [
+            ("counter(item)", "counter(item)"),
+            ("counter(item, decimal)", "counter(item, decimal)"),
+            ("counters(section, \".\")", "counters(section, \".\")"),
+            (
+                "counters(section, \".\", decimal)",
+                "counters(section, \".\", decimal)",
+            ),
+        ];
+        for (input, expected) in cases {
+            let v = parse_value(input);
+            assert!(
+                matches!(v, Value::Counter(_)),
+                "{input} should be Value::Counter"
+            );
+            assert_eq!(v.to_string(), expected, "display mismatch for {input}");
+        }
+    }
+
+    #[test]
+    fn parse_value_counter_case_insensitive() {
+        let v = parse_value("COUNTER(item)");
+        assert!(matches!(v, Value::Counter(_)));
+        assert_eq!(v.to_string(), "counter(item)");
+    }
+
+    #[test]
+    fn value_from_position() {
+        let cases: [(Position, &str); 4] = [
+            (Position::center(), "center"),
+            (
+                Position::new2(PositionKeyword::Top, PositionKeyword::Left),
+                "top left",
+            ),
+            (
+                Position::new2(Length::px(10.0), Length::pct(50.0)),
+                "10px 50%",
+            ),
+            (Position::new(PositionKeyword::Bottom), "bottom"),
+        ];
+        for (pos, expected) in cases {
+            let v: Value = pos.into();
+            assert!(matches!(v, Value::Position(_)));
+            assert_eq!(v.to_string(), expected);
+        }
+    }
+
+    #[test]
+    fn parse_value_attr_functions() {
+        let cases: [(&str, &str); 4] = [
+            ("attr(href)", "attr(href)"),
+            ("attr(data-count integer)", "attr(data-count integer)"),
+            (
+                "attr(data-label string, \"missing\")",
+                "attr(data-label string, \"missing\")",
+            ),
+            ("attr(data-count integer, 0)", "attr(data-count integer, 0)"),
+        ];
+        for (input, expected) in cases {
+            let v = parse_value(input);
+            assert!(matches!(v, Value::Attr(_)), "{input} should be Value::Attr");
+            assert_eq!(v.to_string(), expected, "display mismatch for {input}");
+        }
+    }
+
+    #[test]
+    fn parse_value_attr_case_insensitive() {
+        let v = parse_value("ATTR(href)");
+        assert!(matches!(v, Value::Attr(_)));
+        assert_eq!(v.to_string(), "attr(href)");
+    }
+
+    #[test]
+    fn parse_value_easing_keywords() {
+        let cases: [(&str, &str); 5] = [
+            ("linear", "linear"),
+            ("ease", "ease"),
+            ("ease-in", "ease-in"),
+            ("ease-out", "ease-out"),
+            ("ease-in-out", "ease-in-out"),
+        ];
+        for (input, expected) in cases {
+            let v = parse_value(input);
+            assert!(
+                matches!(v, Value::EasingFunction(_)),
+                "{input} should be Value::EasingFunction"
+            );
+            assert_eq!(v.to_string(), expected, "display mismatch for {input}");
+        }
+    }
+
+    #[test]
+    fn parse_value_easing_functions() {
+        let cases: [(&str, &str); 7] = [
+            ("cubic-bezier(0, 0, 1, 1)", "cubic-bezier(0, 0, 1, 1)"),
+            (
+                "cubic-bezier(0.25, 0.1, 0.25, 1)",
+                "cubic-bezier(0.25, 0.1, 0.25, 1)",
+            ),
+            ("steps(4)", "steps(4)"),
+            ("steps(4, start)", "steps(4, start)"),
+            ("steps(4, jump-start)", "steps(4, jump-start)"),
+            ("steps(4, jump-none)", "steps(4, jump-none)"),
+            ("steps(4, jump-both)", "steps(4, jump-both)"),
+        ];
+        for (input, expected) in cases {
+            let v = parse_value(input);
+            assert!(
+                matches!(v, Value::EasingFunction(_)),
+                "{input} should be Value::EasingFunction"
+            );
+            assert_eq!(v.to_string(), expected, "display mismatch for {input}");
+        }
+    }
+
+    #[test]
+    fn parse_value_easing_case_insensitive() {
+        let v = parse_value("CUBIC-BEZIER(0, 0, 1, 1)");
+        assert!(matches!(v, Value::EasingFunction(_)));
+        assert_eq!(v.to_string(), "cubic-bezier(0, 0, 1, 1)");
+    }
+
+    #[test]
+    fn parse_value_env_functions() {
+        let cases: [(&str, &str); 6] = [
+            ("env(safe-area-inset-top)", "env(safe-area-inset-top)"),
+            (
+                "env(safe-area-inset-top, 0px)",
+                "env(safe-area-inset-top, 0px)",
+            ),
+            ("env(my-var, 1.5)", "env(my-var, 1.5)"),
+            ("env(my-var, 0)", "env(my-var, 0)"),
+            ("env(my-var, \"fallback\")", "env(my-var, \"fallback\")"),
+            ("env(my-var, 1rem)", "env(my-var, 1rem)"),
+        ];
+        for (input, expected) in cases {
+            let v = parse_value(input);
+            assert!(matches!(v, Value::Env(_)), "{input} should be Value::Env");
+            assert_eq!(v.to_string(), expected, "display mismatch for {input}");
+        }
+    }
+
+    #[test]
+    fn parse_value_env_case_insensitive() {
+        let v = parse_value("ENV(safe-area-inset-top)");
+        assert!(matches!(v, Value::Env(_)));
+        assert_eq!(v.to_string(), "env(safe-area-inset-top)");
+    }
+
+    #[test]
+    fn parse_value_rect_functions() {
+        let cases: [(&str, &str); 5] = [
+            ("rect(0, 10px, 20px, 30px)", "rect(0px, 10px, 20px, 30px)"),
+            ("rect(0 10px 20px 30px)", "rect(0px, 10px, 20px, 30px)"),
+            (
+                "rect(auto, 10px, auto, 10px)",
+                "rect(auto, 10px, auto, 10px)",
+            ),
+            ("rect(0px, 0px, 0px, 0px)", "rect(0px, 0px, 0px, 0px)"),
+            (
+                "rect(auto, auto, auto, auto)",
+                "rect(auto, auto, auto, auto)",
+            ),
+        ];
+        for (input, expected) in cases {
+            let v = parse_value(input);
+            assert!(matches!(v, Value::Rect(_)), "{input} should be Value::Rect");
+            assert_eq!(v.to_string(), expected, "display mismatch for {input}");
+        }
+    }
+
+    #[test]
+    fn parse_value_rect_case_insensitive() {
+        let v = parse_value("RECT(0px, 0px, 100px, 100px)");
+        assert!(matches!(v, Value::Rect(_)));
+        assert_eq!(v.to_string(), "rect(0px, 0px, 100px, 100px)");
+    }
+
+    #[test]
+    fn parse_value_sizing_keywords() {
+        let cases: [(&str, &str); 3] = [
+            ("min-content", "min-content"),
+            ("max-content", "max-content"),
+            ("stretch", "stretch"),
+        ];
+        for (input, expected) in cases {
+            let v = parse_value(input);
+            assert!(
+                matches!(v, Value::Sizing(_)),
+                "{input} should be Value::Sizing"
+            );
+            assert_eq!(v.to_string(), expected, "display mismatch for {input}");
+        }
+    }
+
+    #[test]
+    fn parse_value_fit_content_functions() {
+        let cases: [(&str, &str); 2] = [
+            ("fit-content(200px)", "fit-content(200px)"),
+            ("fit-content(50%)", "fit-content(50%)"),
+        ];
+        for (input, expected) in cases {
+            let v = parse_value(input);
+            assert!(
+                matches!(v, Value::Sizing(_)),
+                "{input} should be Value::Sizing"
+            );
+            assert_eq!(v.to_string(), expected, "display mismatch for {input}");
+        }
+    }
+
+    #[test]
+    fn parse_value_sizing_case_insensitive() {
+        let v = parse_value("FIT-CONTENT(100px)");
+        assert!(matches!(v, Value::Sizing(_)));
+        assert_eq!(v.to_string(), "fit-content(100px)");
+    }
+
+    #[test]
+    fn parse_value_calc_functions() {
+        let cases: [(&str, &str); 10] = [
+            ("calc(100% - 20px)", "calc(100% - 20px)"),
+            ("calc((100% - 20px) / 2)", "calc((100% - 20px) / 2)"),
+            ("calc(2 * (100% - 20px))", "calc(2 * (100% - 20px))"),
+            ("calc(100% - 20px / 2)", "calc(100% - 20px / 2)"),
+            ("calc(150%)", "calc(150%)"),
+            ("calc(90deg + 10deg)", "calc(90deg + 10deg)"),
+            ("min(100% - 20px, 50%)", "min(100% - 20px, 50%)"),
+            ("max(100px, 50%)", "max(100px, 50%)"),
+            ("clamp(10px, 50%, 100px)", "clamp(10px, 50%, 100px)"),
+            (
+                "clamp(1rem, 2vw + 1rem, 3rem)",
+                "clamp(1rem, 2vw + 1rem, 3rem)",
+            ),
+        ];
+        for (input, expected) in cases {
+            let v = parse_value(input);
+            assert!(matches!(v, Value::Calc(_)), "{input} should be Value::Calc");
+            assert_eq!(v.to_string(), expected, "display mismatch for {input}");
+        }
+    }
+
+    #[test]
+    fn parse_value_calc_case_insensitive() {
+        let v = parse_value("CALC(100% - 20px)");
+        assert!(matches!(v, Value::Calc(_)));
+        assert_eq!(v.to_string(), "calc(100% - 20px)");
+    }
+
+    #[test]
+    fn parse_value_min_max_clamp_case_insensitive() {
+        let cases: [(&str, &str); 3] = [
+            ("MIN(100px, 50%)", "min(100px, 50%)"),
+            ("MAX(100px, 50%)", "max(100px, 50%)"),
+            ("CLAMP(10px, 50%, 100px)", "clamp(10px, 50%, 100px)"),
+        ];
+        for (input, expected) in cases {
+            let v = parse_value(input);
+            assert!(matches!(v, Value::Calc(_)), "{input} should be Value::Calc");
+            assert_eq!(v.to_string(), expected, "display mismatch for {input}");
+        }
+    }
+
+    #[test]
+    fn parse_value_filter_functions() {
+        let cases: [(&str, &str); 9] = [
+            ("blur(5px)", "blur(5px)"),
+            ("brightness(0.5)", "brightness(0.5)"),
+            ("contrast(0.8)", "contrast(0.8)"),
+            ("grayscale(0.5)", "grayscale(0.5)"),
+            ("hue-rotate(90deg)", "hue-rotate(90deg)"),
+            ("invert(1)", "invert(1)"),
+            ("opacity(0.5)", "opacity(0.5)"),
+            ("saturate(2)", "saturate(2)"),
+            ("sepia(0.3)", "sepia(0.3)"),
+        ];
+        for (input, expected) in cases {
+            let v = parse_value(input);
+            assert!(
+                matches!(v, Value::Filter(_)),
+                "{input} should be Value::Filter"
+            );
+            assert_eq!(v.to_string(), expected, "display mismatch for {input}");
+        }
+    }
+
+    #[test]
+    fn parse_value_filter_case_insensitive() {
+        let v = parse_value("BLUR(5px)");
+        assert!(matches!(v, Value::Filter(_)));
+        assert_eq!(v.to_string(), "blur(5px)");
+    }
+
+    #[test]
+    fn parse_value_drop_shadow_functions() {
+        let cases: [(&str, &str); 4] = [
+            ("drop-shadow(2px 2px)", "drop-shadow(2px 2px)"),
+            ("drop-shadow(2px 2px 4px)", "drop-shadow(2px 2px 4px)"),
+            (
+                "drop-shadow(2px 2px red)",
+                "drop-shadow(2px 2px rgb(255, 0, 0))",
+            ),
+            (
+                "drop-shadow(2px 2px 4px red)",
+                "drop-shadow(2px 2px 4px rgb(255, 0, 0))",
+            ),
+        ];
+        for (input, expected) in cases {
+            let v = parse_value(input);
+            assert!(
+                matches!(v, Value::Filter(_)),
+                "{input} should be Value::Filter"
+            );
+            assert_eq!(v.to_string(), expected, "display mismatch for {input}");
+        }
+    }
+
+    #[test]
+    fn parse_value_global_keywords() {
+        let cases: [(&str, &str); 4] = [
+            ("initial", "initial"),
+            ("inherit", "inherit"),
+            ("unset", "unset"),
+            ("revert", "revert"),
+        ];
+        for (input, expected) in cases {
+            let v = parse_value(input);
+            assert!(
+                matches!(v, Value::GlobalKeyword(_)),
+                "{input} should be Value::GlobalKeyword"
+            );
+            assert_eq!(v.to_string(), expected, "display mismatch for {input}");
+        }
+    }
+
+    #[test]
+    fn parse_value_global_keywords_case_insensitive() {
+        let cases: [(&str, &str); 4] = [
+            ("INITIAL", "initial"),
+            ("Inherit", "inherit"),
+            ("Unset", "unset"),
+            ("reVerT", "revert"),
+        ];
+        for (input, expected) in cases {
+            let v = parse_value(input);
+            assert!(
+                matches!(v, Value::GlobalKeyword(_)),
+                "{input} should be Value::GlobalKeyword"
+            );
+            assert_eq!(v.to_string(), expected, "display mismatch for {input}");
+        }
+    }
+
+    #[test]
+    fn parse_value_transform_functions() {
+        let cases: [(&str, &str); 12] = [
+            ("translateX(10px)", "translateX(10px)"),
+            ("translateY(20px)", "translateY(20px)"),
+            ("translateZ(30px)", "translateZ(30px)"),
+            ("translate(10px, 20px)", "translate(10px, 20px)"),
+            (
+                "translate3d(10px, 20px, 30px)",
+                "translate3d(10px, 20px, 30px)",
+            ),
+            ("scale(1.5)", "scale(1.5)"),
+            ("scale(1.5, 2)", "scale(1.5, 2)"),
+            ("scaleX(1.5)", "scaleX(1.5)"),
+            ("rotate(45deg)", "rotate(45deg)"),
+            ("rotateX(90deg)", "rotateX(90deg)"),
+            ("skew(10deg, 20deg)", "skew(10deg, 20deg)"),
+            ("skewX(10deg)", "skewX(10deg)"),
+        ];
+        for (input, expected) in cases {
+            let v = parse_value(input);
+            assert!(
+                matches!(v, Value::Transform(_)),
+                "{input} should be Value::Transform"
+            );
+            assert_eq!(v.to_string(), expected, "display mismatch for {input}");
+        }
+    }
+
+    #[test]
+    fn parse_value_transform_case_insensitive() {
+        let v = parse_value("ROTATE(45deg)");
+        assert!(matches!(v, Value::Transform(_)));
+        assert_eq!(v.to_string(), "rotate(45deg)");
+    }
+
+    #[test]
+    fn parse_value_ratio() {
+        let cases: [(&str, f32, f32, &str); 5] = [
+            ("16/9", 16.0, 9.0, "16/9"),
+            ("16 / 9", 16.0, 9.0, "16/9"),
+            ("4 / 3", 4.0, 3.0, "4/3"),
+            ("1/1", 1.0, 1.0, "1/1"),
+            ("2.5 / 1", 2.5, 1.0, "2.5/1"),
+        ];
+        for (input, num, den, display) in cases {
+            let v = parse_value(input);
+            assert!(
+                matches!(v, Value::Ratio(_)),
+                "{input} should be Value::Ratio"
+            );
+            if let Value::Ratio(r) = v {
+                assert!((r.numerator() - num).abs() < 1e-6, "numerator for {input}");
+                assert!(
+                    (r.denominator() - den).abs() < 1e-6,
+                    "denominator for {input}"
+                );
+                assert_eq!(v.to_string(), display, "display for {input}");
+            }
+        }
+    }
+
+    #[test]
+    fn parse_value_ratio_invalid_uses_fallback() {
+        // `16px/9` has a unit on the numerator, so it is not a ratio.
+        let v = parse_value("16px/9");
+        assert!(
+            !matches!(v, Value::Ratio(_)),
+            "16px/9 should not become a ratio, got {v:?}"
+        );
+        // Negative or zero denominator values are rejected from the ratio path.
+        let v = parse_value("16/-9");
+        assert!(
+            !matches!(v, Value::Ratio(_)),
+            "16/-9 should not become a ratio"
+        );
+    }
+
+    #[test]
     fn parse_value_more_units() {
         for (input, want) in [
             ("1ex", "1ex"),
@@ -1097,7 +2339,10 @@ mod tests {
         for (input, want) in [("url('img.png')", true), ("8px", false)] {
             assert_eq!(matches!(parse_value(input), Value::Url(_)), want);
         }
-        assert_eq!(parse_value("url('img.png')").to_string(), "url(\"img.png\")");
+        assert_eq!(
+            parse_value("url('img.png')").to_string(),
+            "url(\"img.png\")"
+        );
     }
 
     #[test]
@@ -1203,8 +2448,10 @@ mod tests {
 
     #[test]
     fn parse_value_generic_function() {
+        // `translateX()` is now typed, so use a genuinely unknown function
+        // for the generic-function check.
         let v = parse_value("translateX(10px)");
-        for (input, want) in [("translateX(10px)", true), ("auto", false)] {
+        for (input, want) in [("unknown(10px)", true), ("auto", false)] {
             assert_eq!(matches!(parse_value(input), Value::Function { .. }), want);
         }
         assert_eq!(v.to_string(), "translateX(10px)");
@@ -1264,7 +2511,10 @@ mod tests {
 
     #[test]
     fn split_important_suffix_not_boundary() {
-        assert_eq!(split_important("red !importantx"), ("red !importantx", false));
+        assert_eq!(
+            split_important("red !importantx"),
+            ("red !importantx", false)
+        );
     }
 
     #[test]
@@ -1319,7 +2569,10 @@ mod tests {
     #[test]
     fn parse_decl_value_single_ident_kept() {
         for (input, want) in [("solid", true), ("8px", false)] {
-            assert_eq!(matches!(parse_decl_value(input), Value::Identifier(_)), want);
+            assert_eq!(
+                matches!(parse_decl_value(input), Value::Identifier(_)),
+                want
+            );
         }
     }
 }
@@ -1332,7 +2585,9 @@ mod quoted_string_tests {
     #[test]
     fn quoted_string_with_spaces_is_one_value() {
         let v = parse_value_list(r#""EB Garamond", Georgia, serif"#);
-        let Value::List(items) = v else { panic!("expected list, got {v:?}") };
+        let Value::List(items) = v else {
+            panic!("expected list, got {v:?}")
+        };
         assert!(matches!(&items[0], Value::String(s) if s.as_str() == "EB Garamond"));
     }
 

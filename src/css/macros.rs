@@ -56,7 +56,7 @@
 ///
 /// let css_text = sheet.render();
 /// assert!(css_text.contains(".btn"));
-/// assert!(css_text.contains("background-color: rgba(0, 0, 0);"));
+/// assert!(css_text.contains("background-color: rgb(0, 0, 0);"));
 /// assert!(css_text.contains("color: rgb(0, 0, 255);"));
 /// assert!(css_text.contains("width: 8px;"));
 /// assert!(css_text.contains("&:hover"));
