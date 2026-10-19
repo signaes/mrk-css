@@ -60,6 +60,36 @@ impl Shadow {
         self.inset = true;
         self
     }
+
+    /// The horizontal offset.
+    pub fn x(&self) -> &Length {
+        &self.x
+    }
+
+    /// The vertical offset.
+    pub fn y(&self) -> &Length {
+        &self.y
+    }
+
+    /// The blur radius, if the shadow has one.
+    pub fn blur_radius(&self) -> Option<&Length> {
+        self.blur.as_ref()
+    }
+
+    /// The spread radius, if the shadow has one.
+    pub fn spread_radius(&self) -> Option<&Length> {
+        self.spread.as_ref()
+    }
+
+    /// The shadow's color, if it has one.
+    pub fn shadow_color(&self) -> Option<&Color> {
+        self.color.as_ref()
+    }
+
+    /// Whether the shadow is an inset one.
+    pub fn is_inset(&self) -> bool {
+        self.inset
+    }
 }
 
 impl fmt::Display for Shadow {
