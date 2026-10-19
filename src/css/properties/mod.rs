@@ -448,6 +448,10 @@ fn tokenize_values(s: &str) -> Vec<String> {
     let mut tokens = Vec::new();
     let mut cur = String::new();
     let mut quote: Option<char> = None;
+    // The depth of nested brackets: a function's arguments are one token,
+    // commas and all — `rgba(0, 0, 0, 0.5)` is a colour, not four
+    // separate values.
+    let mut depth = 0i32;
     let mut chars = s.chars().peekable();
     while let Some(c) = chars.next() {
         if let Some(q) = quote {
@@ -466,7 +470,17 @@ fn tokenize_values(s: &str) -> Vec<String> {
             cur.push(c);
             continue;
         }
-        if c.is_whitespace() {
+        if c == '(' || c == '[' {
+            depth += 1;
+            cur.push(c);
+            continue;
+        }
+        if c == ')' || c == ']' {
+            depth -= 1;
+            cur.push(c);
+            continue;
+        }
+        if c.is_whitespace() && depth == 0 {
             if !cur.is_empty() {
                 tokens.push(std::mem::take(&mut cur));
             }
@@ -493,12 +507,20 @@ fn split_glued_dot(token: &str) -> (&str, Option<&str>) {
     if !matches!(bytes.first(), Some(b) if b.is_ascii_alphabetic() || *b == b'_') {
         return (token, None);
     }
+    // A dot inside brackets belongs to a function's argument — the `0.5` of
+    // `rgba(0, 0, 0, 0.5)` — so only a top-level dot is a glued number.
+    let mut depth = 0i32;
     for i in 1..bytes.len() {
-        if bytes[i] == b'.'
-            && matches!(bytes[i - 1], b if b.is_ascii_alphanumeric() || b == b'-' || b == b'_')
-            && matches!(bytes.get(i + 1), Some(b) if b.is_ascii_digit())
-        {
-            return (&token[..i], Some(&token[i..]));
+        match bytes[i] {
+            b'(' | b'[' => depth += 1,
+            b')' | b']' => depth -= 1,
+            b'.' if depth == 0
+                && matches!(bytes[i - 1], b if b.is_ascii_alphanumeric() || b == b'-' || b == b'_')
+                && matches!(bytes.get(i + 1), Some(b) if b.is_ascii_digit()) =>
+            {
+                return (&token[..i], Some(&token[i..]));
+            }
+            _ => {}
         }
     }
     (token, None)
@@ -2404,6 +2426,16 @@ mod tests {
         for (input, want) in [("8px", true), ("auto", false)] {
             assert_eq!(matches!(parse_value_list(input), Value::Length(_)), want);
         }
+    }
+
+    #[test]
+    fn a_function_with_commas_is_one_value() {
+        // `rgba(0, 0, 0, 0.5)` is a colour, not four values: the commas
+        // inside the function belong to it.
+        let v = parse_value_list("2px 4px rgba(0, 0, 0, 0.5)");
+        let Value::List(items) = v else { panic!("a list") };
+        assert_eq!(items.len(), 3, "two lengths and a colour: {items:?}");
+        assert!(matches!(items[2], Value::Color(_)), "the colour is one value");
     }
 
     #[test]
