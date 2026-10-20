@@ -345,6 +345,13 @@ pub(crate) fn parse_value(s: &str) -> Value {
 
     // Function call: name(args) — try before hex/literal so "rgb(255,0,0)"
     // is recognized as a color fn, not as raw "rgb ( 255 , 0 , 0 )".
+    //
+    // A value can hold several calls — `translate(10px) rotate(45deg)` —
+    // and each is a value of its own.
+    if let Some(list) = parse_function_list(s) {
+        return list;
+    }
+
     if let Some((name, args_str)) = split_function_call(s) {
         return parse_function_value(name, args_str);
     }
@@ -642,17 +649,84 @@ fn unit_to_value(n: f32, unit: &str) -> Value {
 
 /// Split `name(args)` into the function name and the argument string.
 /// Returns `None` if the string isn't a function call.
+///
+/// The parentheses are balanced: the argument string ends at the `)` that
+/// closes the call, not at the last `)` in the string. A value that has
+/// something after that `)` is a *list* of values, not one call — see
+/// [`parse_function_list`].
 fn split_function_call(s: &str) -> Option<(&str, &str)> {
     let open = s.find('(')?;
-    if !s.ends_with(')') {
-        return None;
-    }
     let name = s[..open].trim();
-    let args = &s[open + 1..s.len() - 1];
     if name.is_empty() || !is_ident(name) {
         return None;
     }
-    Some((name, args))
+
+    let rest = &s[open + 1..];
+    let close = matching_paren(rest)?;
+    if close + 1 != rest.len() {
+        // Something follows the call: this is a list, not one call.
+        return None;
+    }
+
+    Some((name, &rest[..close]))
+}
+
+/// The index of the `)` that closes the parentheses opened before `s`.
+///
+/// The scan skips over quoted strings, so a `)` inside one does not close
+/// the call.
+fn matching_paren(s: &str) -> Option<usize> {
+    let mut depth = 0i32;
+    let mut quote: Option<char> = None;
+    let mut chars = s.char_indices();
+
+    while let Some((index, c)) = chars.next() {
+        if let Some(q) = quote {
+            if c == '\\' {
+                chars.next();
+            } else if c == q {
+                quote = None;
+            }
+            continue;
+        }
+
+        match c {
+            '"' | '\'' => quote = Some(c),
+            '(' => depth += 1,
+            ')' => {
+                if depth == 0 {
+                    return Some(index);
+                }
+                depth -= 1;
+            }
+            _ => {}
+        }
+    }
+
+    None
+}
+
+/// Parse a value that is a list of function calls: `translate(10px) rotate(45deg)`.
+///
+/// CSS writes several functions in one value — a transform, a filter, a
+/// transition — and each call is a value of its own. The list is a list of
+/// calls only when every token is one; anything else is a list of mixed
+/// values, which the caller parses.
+fn parse_function_list(s: &str) -> Option<Value> {
+    let tokens = tokenize_values(s);
+    if tokens.len() < 2 {
+        return None;
+    }
+
+    let mut items = Vec::with_capacity(tokens.len());
+
+    for token in &tokens {
+        let token = token.trim();
+        let (name, args) = split_function_call(token)?;
+        items.push(parse_function_value(name, args));
+    }
+
+    Some(Value::List(items))
 }
 
 /// Build a [`Value`] from a parsed function call.
@@ -2253,6 +2327,52 @@ mod tests {
         let v = parse_value("ROTATE(45deg)");
         assert!(matches!(v, Value::Transform(_)));
         assert_eq!(v.to_string(), "rotate(45deg)");
+    }
+
+    #[test]
+    fn a_value_can_hold_several_function_calls() {
+        // A transform is a *list* of functions, and each one is a value of
+        // its own.
+        let v = parse_value("translate(10px, 20px) rotate(45deg) scale(1.5)");
+        let Value::List(items) = &v else {
+            panic!("a list of calls should be a list, got {v:?}");
+        };
+        assert_eq!(items.len(), 3);
+        assert!(matches!(items[0], Value::Transform(_)));
+        assert!(matches!(items[1], Value::Transform(_)));
+        assert!(matches!(items[2], Value::Transform(_)));
+        assert_eq!(v.to_string(), "translate(10px, 20px) rotate(45deg) scale(1.5)");
+    }
+
+    #[test]
+    fn a_single_call_is_not_a_list() {
+        let v = parse_value("translate(10px, 20px)");
+        assert!(matches!(v, Value::Transform(_)), "{v:?}");
+    }
+
+    #[test]
+    fn a_call_with_a_nested_call_keeps_its_arguments() {
+        // The argument string ends at the `)` that closes the call, so a
+        // nested `calc()` does not run into the arguments after it.
+        //
+        // A `calc()` is not a plain length, so the transform factory does
+        // not type this one; what matters here is that the arguments are
+        // split where CSS splits them.
+        let v = parse_value("translate(calc(10px + 2px), 20px)");
+        let Value::Function { name, args } = &v else {
+            panic!("expected a function, got {v:?}");
+        };
+        assert_eq!(name, "translate");
+        assert_eq!(args.len(), 2);
+        assert!(matches!(args[0], Value::Calc(_)), "{:?}", args[0]);
+        assert!(matches!(args[1], Value::Length(_)), "{:?}", args[1]);
+    }
+
+    #[test]
+    fn a_mixed_list_is_not_a_list_of_calls() {
+        // `url(a.png) no-repeat` is a url and a keyword, not two calls.
+        let v = parse_value("url(a.png) no-repeat");
+        assert!(!matches!(v, Value::List(_)), "{v:?}");
     }
 
     #[test]

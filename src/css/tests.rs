@@ -605,6 +605,20 @@ fn css_macro_modern_color_and_transform() {
 }
 
 #[test]
+fn a_transform_can_hold_several_functions() {
+    // A transform is a list of functions, and the list is parsed as one:
+    // each call is a value of its own.
+    let sheet = crate::css::parse::parse_stylesheet(
+        ".a { transform: translate(10px, 20px) rotate(45deg) scale(1.5); }",
+    );
+    let css = sheet.render();
+    assert!(
+        css.contains("transform: translate(10px, 20px) rotate(45deg) scale(1.5);"),
+        "{css}"
+    );
+}
+
+#[test]
 fn css_macro_transition_leading_dot() {
     let sheet = crate::css! {
         .a { transition: all .3s ease-in-out; }
