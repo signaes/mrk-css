@@ -1064,13 +1064,34 @@ fn try_transform_factory(name: &str, args: &[Value]) -> Option<TransformFunction
         }
     }
 
+    /// A length argument: a length, or a zero written without its unit.
+    ///
+    /// CSS lets a zero length be written as a plain `0`, and
+    /// `translate(10px, 0)` is the ordinary way to write it.
+    fn length(v: &Value) -> Option<Length> {
+        match v {
+            Value::Length(l) => Some(*l),
+            Value::Number(n) if n.value() == 0.0 => Some(Length::px(0.0)),
+            Value::Integer(i) if i.value() == 0 => Some(Length::px(0.0)),
+            _ => None,
+        }
+    }
+
+    /// An angle argument.
+    fn angle(v: &Value) -> Option<Angle> {
+        match v {
+            Value::Angle(a) => Some(*a),
+            _ => None,
+        }
+    }
+
     match name.as_str() {
         "translatex" => match flat.as_slice() {
-            [Value::Length(l)] => Some(TransformFunction::TranslateX(*l)),
+            [v] => length(v).map(TransformFunction::TranslateX),
             _ => None,
         },
         "translatey" => match flat.as_slice() {
-            [Value::Length(l)] => Some(TransformFunction::TranslateY(*l)),
+            [v] => length(v).map(TransformFunction::TranslateY),
             _ => None,
         },
         "translatez" => match flat.as_slice() {
@@ -1078,7 +1099,11 @@ fn try_transform_factory(name: &str, args: &[Value]) -> Option<TransformFunction
             _ => None,
         },
         "translate" => match flat.as_slice() {
-            [Value::Length(x), Value::Length(y)] => Some(TransformFunction::Translate(*x, *y)),
+            // `translate(x)` is `translate(x, 0)`.
+            [x] => length(x).map(|x| TransformFunction::Translate(x, Length::px(0.0))),
+            [x, y] => {
+                length(x).zip(length(y)).map(|(x, y)| TransformFunction::Translate(x, y))
+            }
             _ => None,
         },
         "translate3d" => match flat.as_slice() {
@@ -1128,7 +1153,9 @@ fn try_transform_factory(name: &str, args: &[Value]) -> Option<TransformFunction
             _ => None,
         },
         "skew" => match flat.as_slice() {
-            [Value::Angle(x), Value::Angle(y)] => Some(TransformFunction::Skew(*x, *y)),
+            // `skew(x)` is `skew(x, 0)`.
+            [x] => angle(x).map(|x| TransformFunction::Skew(x, Angle::deg(0.0))),
+            [x, y] => angle(x).zip(angle(y)).map(|(x, y)| TransformFunction::Skew(x, y)),
             _ => None,
         },
         "skewx" => match flat.as_slice() {
@@ -2348,6 +2375,20 @@ mod tests {
     fn a_single_call_is_not_a_list() {
         let v = parse_value("translate(10px, 20px)");
         assert!(matches!(v, Value::Transform(_)), "{v:?}");
+    }
+
+    #[test]
+    fn a_transform_may_leave_out_what_it_defaults_to() {
+        // `translate(x)` is `translate(x, 0)`, and a zero length may be
+        // written without its unit.
+        let one = parse_value("translate(10px)");
+        assert_eq!(one.to_string(), "translate(10px, 0px)", "{one:?}");
+
+        let zero = parse_value("translate(10px, 0)");
+        assert_eq!(zero.to_string(), "translate(10px, 0px)", "{zero:?}");
+
+        let skew = parse_value("skew(10deg)");
+        assert_eq!(skew.to_string(), "skew(10deg, 0deg)", "{skew:?}");
     }
 
     #[test]
