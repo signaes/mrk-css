@@ -78,6 +78,28 @@ pub fn parse_stylesheet(input: &str) -> StyleSheet {
     StyleSheet::from_items(parse_sheet_items(&preprocessed))
 }
 
+/// Parse a whole stylesheet from a string, returning an error instead
+/// of panicking on malformed input.
+///
+/// This is the fallible counterpart to [`parse_stylesheet`], intended
+/// for build-time validation of user-authored `.css` files where a
+/// panic would abort the whole process.
+pub fn parse_stylesheet_fallible(input: &str) -> Result<StyleSheet, String> {
+    use std::panic::{AssertUnwindSafe, catch_unwind};
+
+    match catch_unwind(AssertUnwindSafe(|| parse_stylesheet(input))) {
+        Ok(sheet) => Ok(sheet),
+        Err(payload) => {
+            let message = payload
+                .downcast_ref::<String>()
+                .cloned()
+                .or_else(|| payload.downcast_ref::<&str>().map(|s| (*s).to_string()))
+                .unwrap_or_else(|| "CSS parse error".to_string());
+            Err(message)
+        }
+    }
+}
+
 // ── Preprocessing ───────────────────────────────────────────────────
 
 /// Remove `/* … */` comments, honoring string literals (a `/*` inside

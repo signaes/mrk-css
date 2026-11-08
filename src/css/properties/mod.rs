@@ -1101,9 +1101,9 @@ fn try_transform_factory(name: &str, args: &[Value]) -> Option<TransformFunction
         "translate" => match flat.as_slice() {
             // `translate(x)` is `translate(x, 0)`.
             [x] => length(x).map(|x| TransformFunction::Translate(x, Length::px(0.0))),
-            [x, y] => {
-                length(x).zip(length(y)).map(|(x, y)| TransformFunction::Translate(x, y))
-            }
+            [x, y] => length(x)
+                .zip(length(y))
+                .map(|(x, y)| TransformFunction::Translate(x, y)),
             _ => None,
         },
         "translate3d" => match flat.as_slice() {
@@ -1155,7 +1155,9 @@ fn try_transform_factory(name: &str, args: &[Value]) -> Option<TransformFunction
         "skew" => match flat.as_slice() {
             // `skew(x)` is `skew(x, 0)`.
             [x] => angle(x).map(|x| TransformFunction::Skew(x, Angle::deg(0.0))),
-            [x, y] => angle(x).zip(angle(y)).map(|(x, y)| TransformFunction::Skew(x, y)),
+            [x, y] => angle(x)
+                .zip(angle(y))
+                .map(|(x, y)| TransformFunction::Skew(x, y)),
             _ => None,
         },
         "skewx" => match flat.as_slice() {
@@ -2368,7 +2370,10 @@ mod tests {
         assert!(matches!(items[0], Value::Transform(_)));
         assert!(matches!(items[1], Value::Transform(_)));
         assert!(matches!(items[2], Value::Transform(_)));
-        assert_eq!(v.to_string(), "translate(10px, 20px) rotate(45deg) scale(1.5)");
+        assert_eq!(
+            v.to_string(),
+            "translate(10px, 20px) rotate(45deg) scale(1.5)"
+        );
     }
 
     #[test]
@@ -2594,9 +2599,14 @@ mod tests {
         // `rgba(0, 0, 0, 0.5)` is a colour, not four values: the commas
         // inside the function belong to it.
         let v = parse_value_list("2px 4px rgba(0, 0, 0, 0.5)");
-        let Value::List(items) = v else { panic!("a list") };
+        let Value::List(items) = v else {
+            panic!("a list")
+        };
         assert_eq!(items.len(), 3, "two lengths and a colour: {items:?}");
-        assert!(matches!(items[2], Value::Color(_)), "the colour is one value");
+        assert!(
+            matches!(items[2], Value::Color(_)),
+            "the colour is one value"
+        );
     }
 
     #[test]

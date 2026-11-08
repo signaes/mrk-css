@@ -192,5 +192,7 @@ pub mod render;
 pub mod rule;
 pub mod selector;
 
+pub use parse::parse_stylesheet_fallible;
+
 #[cfg(test)]
 mod tests;
